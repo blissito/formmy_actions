@@ -1,54 +1,238 @@
-# 🚀 Formmy Actions - AI Flow Canvas
+# 🚀 formmy-actions
 
 **Visual AI workflow builder as an embeddable React component**
 
+[![npm version](https://img.shields.io/npm/v/formmy-actions.svg)](https://www.npmjs.com/package/formmy-actions)
 [![React](https://img.shields.io/badge/React-18+-61dafb?style=flat&logo=react)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178c6?style=flat&logo=typescript)](https://www.typescriptlang.org/)
 [![React Flow](https://img.shields.io/badge/React%20Flow-12+-ff0072?style=flat&logo=react)](https://reactflow.dev/)
 
-## ✨ What it is
+**An embeddable React Flow component** for building visual AI agent workflows. Originally developed for [formmy.app](https://formmy.app), now available as a standalone library.
 
-An **embeddable React Flow component** for building visual AI agent workflows. Originally developed for [formmy.app](https://formmy.app), now available as a standalone library.
+## ✨ Features
 
-## 🎯 Current Features
+- 🎨 **Visual workflow builder** with drag & drop interface
+- 🤖 **AI integration** with OpenAI support (GPT-3.5, GPT-4, etc.)
+- 🔄 **Real-time execution** with live status updates  
+- 💾 **Auto-save** workflows with localStorage persistence
+- 🎯 **Embeddable** - drop into any React app
+- 🎨 **Professional UI** with modern, responsive design
 
-- ✅ **Visual workflow builder** with drag & drop
-- ✅ **Input/Agent/Output nodes** with execution engine  
-- ✅ **OpenAI integration** with API key configuration
-- ✅ **Real-time execution** with status updates
-- ✅ **Save/load workflows** with localStorage persistence
-- ✅ **Professional UI** with improved OutputNode design
-
-## 🚀 Quick Start
+## 🚀 Installation
 
 ```bash
-npm install
-npm run dev
-# Open http://localhost:3000
+npm install formmy-actions
 ```
 
-## 🎮 How to use
+## 📖 Quick Start
 
-1. **Add Input node** - Write your message
-2. **Add Agent node** - Configure AI model (requires OpenAI API key)
-3. **Add Output node** - View results  
+```tsx
+import { AIFlowCanvas } from 'formmy-actions';
+import 'formmy-actions/style.css'; // Required CSS
+
+export default function App() {
+  return (
+    <div style={{ width: '100vw', height: '100vh' }}>
+      <AIFlowCanvas />
+    </div>
+  );
+}
+```
+
+## 🎮 How to Use
+
+1. **Add Input node** - Write your message/prompt
+2. **Add Agent node** - Configure AI model (requires OpenAI API key)  
+3. **Add Output node** - View AI responses
 4. **Connect nodes** - Drag from output handles to input handles
 5. **Execute flow** - Click "Ejecutar Flujo" button
-6. **Save/Load** - Cmd/Ctrl+S to save, auto-loads on refresh
+6. **Save/Load** - Automatic save with Ctrl/Cmd+S
 
-## 🔧 Development Status
+## ⚙️ Configuration
 
-**Phase 1: Core Functionality** ✅ COMPLETED
-- [x] Basic node types (Input, Agent, Output)
-- [x] Execution engine with VercelAI/OpenAI integration
-- [x] Visual connections and flow execution  
-- [x] Save/load system
-- [x] Professional OutputNode redesign
+### Basic Usage
 
-**Phase 2: Advanced Features** 🚧 NEXT
-- [ ] Additional node types (Prompt, Function, Tool)
-- [ ] Multiple AI providers (Anthropic, etc.)
-- [ ] Advanced execution features
-- [ ] Component library extraction
+```tsx
+import { AIFlowCanvas } from 'formmy-actions';
+import 'formmy-actions/style.css';
 
-## 🤖 Made with ❤️ by [Fixter.org](https://fixter.org) for [formmy.app](https://formmy.app)
+<AIFlowCanvas />
+```
+
+### With API Keys
+
+```tsx
+<AIFlowCanvas 
+  apiKeys={{
+    openai: 'your-openai-api-key'
+  }}
+/>
+```
+
+### With Callbacks
+
+```tsx
+<AIFlowCanvas 
+  apiKeys={{
+    openai: process.env.REACT_APP_OPENAI_API_KEY
+  }}
+  onSave={(flowData) => {
+    console.log('Flow saved:', flowData);
+    // Save to your backend
+  }}
+  onExecute={(flowData) => {
+    console.log('Flow executed:', flowData);
+    // Handle execution result
+  }}
+  readonly={false}
+/>
+```
+
+### Full Configuration
+
+```tsx
+<AIFlowCanvas 
+  apiKeys={{
+    openai: 'your-openai-api-key'
+  }}
+  onSave={(flowData) => {
+    // Called when user saves (Ctrl/Cmd+S)
+    saveToDatabase(flowData);
+  }}
+  onExecute={(flowData) => {
+    // Called after successful execution
+    return Promise.resolve();
+  }}
+  readonly={false}
+  className="my-flow-canvas"
+  style={{ border: '1px solid #ccc' }}
+/>
+```
+
+## 📋 Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `apiKeys` | `{ openai?: string }` | `{}` | AI provider API keys |
+| `onSave` | `(flowData: any) => void` | `undefined` | Called when flow is saved |
+| `onExecute` | `(flowData: any) => Promise<any>` | `undefined` | Called after execution |
+| `readonly` | `boolean` | `false` | Whether canvas is read-only |
+| `className` | `string` | `""` | Additional CSS classes |
+| `style` | `React.CSSProperties` | `{}` | Inline styles |
+
+## 🎯 Node Types
+
+### Input Node
+- Text input for prompts/messages
+- Auto-expanding textarea
+- Connects to Agent nodes
+
+### Agent Node  
+- AI model configuration
+- OpenAI integration (GPT-3.5, GPT-4, etc.)
+- Configurable temperature, tokens, etc.
+- Real-time execution status
+
+### Output Node
+- Professional result display  
+- Expandable details view
+- Copy-to-clipboard functionality
+- Execution metadata and logs
+
+## 🔧 Requirements
+
+- React 18+
+- Modern browser with ES2020 support
+
+## 📦 Bundle Size
+
+- **ES Module**: ~103KB (~24KB gzipped)
+- **UMD**: ~72KB (~21KB gzipped)  
+- **CSS**: ~16KB (~3KB gzipped)
+
+## 🎨 Styling
+
+The component includes all necessary CSS. Simply import the styles:
+
+```tsx
+import 'formmy-actions/style.css';
+```
+
+Styles are scoped and won't conflict with your app's CSS.
+
+## 🤖 AI Integration
+
+Currently supports:
+- ✅ **OpenAI** (GPT-3.5-turbo, GPT-4, GPT-4-turbo, etc.)
+- 🚧 **Anthropic** (Coming in v1.1)
+- 🚧 **Local models** (Coming in v1.1)
+
+### OpenAI Setup
+
+1. Get an API key from [OpenAI](https://platform.openai.com/api-keys)
+2. Pass it via props or set in the UI:
+
+```tsx
+<AIFlowCanvas 
+  apiKeys={{ openai: 'sk-...' }}
+/>
+```
+
+Or users can click the ⚙️ settings button to configure API keys in the UI.
+
+## 📂 Project Structure
+
+```
+formmy-actions/
+├── src/
+│   ├── AIFlowCanvas.tsx    # Main component
+│   ├── CustomNodes.tsx     # Node components  
+│   ├── runtime/            # Execution engine
+│   └── services/           # AI integrations
+├── dist/                   # Built files
+└── README.md
+```
+
+## 🚧 Roadmap
+
+**v1.1 - Advanced Nodes**
+- [ ] Prompt Template node
+- [ ] Function node (custom logic)
+- [ ] Tool integration node
+
+**v1.2 - Multi-Provider**  
+- [ ] Anthropic/Claude support
+- [ ] Provider comparison mode
+- [ ] Custom model endpoints
+
+**v1.3 - Advanced Features**
+- [ ] Flow templates
+- [ ] Export/import flows
+- [ ] Collaborative editing
+
+## 🤝 Contributing
+
+This is an open-source project. Contributions welcome!
+
+```bash
+# Development setup
+git clone https://github.com/blissito/formmy_actions.git
+cd formmy_actions
+npm install
+npm run dev
+```
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) for details
+
+## 🔗 Links
+
+- 📦 [npm package](https://www.npmjs.com/package/formmy-actions)
+- 🐙 [GitHub repo](https://github.com/blissito/formmy_actions)
+- 🌐 [formmy.app](https://formmy.app) - Where this was born
+- 🏢 [Fixter.org](https://fixter.org) - Made with ❤️
+
+---
+
+**🤖 Made with ❤️ by [Fixter.org](https://fixter.org) for [formmy.app](https://formmy.app)**

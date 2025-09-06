@@ -1,15 +1,13 @@
 {
   "name": "formmy-actions",
   "private": false,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Visual AI workflow builder as an embeddable React component",
   "type": "module",
   "main": "./dist/formmy-actions.umd.js",
   "module": "./dist/formmy-actions.es.js",
-  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
       "import": "./dist/formmy-actions.es.js",
       "require": "./dist/formmy-actions.umd.js"
     },
@@ -22,8 +20,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "build:lib": "vite build",
-    "build:types": "tsc --declaration --emitDeclarationOnly --outDir dist",
-    "build:all": "npm run build:types && npm run build:lib",
+    "build:all": "npm run build:lib",
     "lint": "eslint .",
     "preview": "vite preview",
     "meta-gen": "tsx src/generator/SelfImprovementWorkflow.ts",

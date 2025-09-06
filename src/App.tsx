@@ -1,0 +1,683 @@
+import { useCallback, useRef, DragEvent, useState, useEffect } from "react";
+import toast, { Toaster } from 'react-hot-toast';
+import {
+  ReactFlow,
+  ReactFlowProvider,
+  MiniMap,
+  Controls,
+  Background,
+  Panel,
+  useNodesState,
+  useEdgesState,
+  addEdge,
+  useReactFlow,
+  type OnConnect,
+  type Node,
+  type Edge,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+import {
+  InputNode,
+  AgentNode,
+  OutputNode,
+  PromptNode,
+  FunctionNode,
+  ToolNode,
+} from "./CustomNodes";
+import { GeneratedComponentsSidebar } from "./components/GeneratedComponentsSidebar";
+import { GlobalSettings, useGlobalConfig } from "./components/GlobalSettings";
+import { ExecutionEngine } from "./runtime/ExecutionEngine";
+import { FiEdit, FiCheckCircle, FiFileText, FiZap, FiPlay, FiSettings, FiSave } from "react-icons/fi";
+import { RiFlowChart } from "react-icons/ri";
+import { HiOutlineSparkles } from "react-icons/hi2";
+import { RiRobot2Line } from "react-icons/ri";
+
+// Tipos de nodos disponibles para arrastrar
+const nodeTypes = [
+  {
+    type: "input",
+    icon: FiEdit,
+    title: "Entrada de Texto",
+    description: "Ingresa tu texto o datos aquí",
+    gradient: "from-blue-500 to-blue-600",
+    bgColor: "bg-gradient-to-br from-blue-50 to-blue-100",
+    borderColor: "border-blue-400",
+    textColor: "text-blue-800",
+  },
+  {
+    type: "agent",
+    icon: RiRobot2Line,
+    title: "Agente IA",
+    description: "Procesamiento inteligente con IA",
+    gradient: "from-amber-500 to-orange-500",
+    bgColor: "bg-gradient-to-br from-amber-50 to-orange-100",
+    borderColor: "border-amber-400",
+    textColor: "text-amber-800",
+  },
+  {
+    type: "output",
+    icon: HiOutlineSparkles,
+    title: "Resultado",
+    description: "Salida final del procesamiento",
+    gradient: "from-green-500 to-emerald-500",
+    bgColor: "bg-gradient-to-br from-green-50 to-emerald-100",
+    borderColor: "border-green-400",
+    textColor: "text-green-800",
+  },
+  {
+    type: "prompt",
+    icon: FiFileText,
+    title: "Plantilla de Prompt",
+    description: "Prompt estructurado con variables",
+    gradient: "from-purple-500 to-violet-500",
+    bgColor: "bg-gradient-to-br from-purple-50 to-violet-100",
+    borderColor: "border-purple-400",
+    textColor: "text-purple-800",
+  },
+  {
+    type: "function",
+    icon: FiZap,
+    title: "Función Personalizada",
+    description: "Ejecuta funciones personalizadas",
+    gradient: "from-red-500 to-pink-500",
+    bgColor: "bg-gradient-to-br from-red-50 to-pink-100",
+    borderColor: "border-red-400",
+    textColor: "text-red-800",
+  },
+  {
+    type: "tool",
+    icon: FiSettings,
+    title: "Tool",
+    description: "Herramientas para agentes IA",
+    gradient: "from-orange-500 to-red-500",
+    bgColor: "bg-gradient-to-br from-orange-50 to-red-100",
+    borderColor: "border-orange-400",
+    textColor: "text-orange-800",
+  },
+];
+
+// Mapeo de tipos de nodos custom
+const customNodeTypes = {
+  input: InputNode,
+  agent: AgentNode,
+  output: OutputNode,
+  prompt: PromptNode,
+  function: FunctionNode,
+  tool: ToolNode,
+};
+
+let id = 0;
+const getId = () => `dndnode_${id++}`;
+
+// Nodos iniciales
+const initialNodes: Node[] = [
+  {
+    id: "1",
+    type: "input",
+    data: { label: "Entrada de Texto" },
+    position: { x: 300, y: 50 },
+  },
+  {
+    id: "2",
+    type: "agent",
+    data: { label: "Agente IA" },
+    position: { x: 300, y: 200 },
+  },
+  {
+    id: "3",
+    type: "output",
+    data: { label: "Resultado" },
+    position: { x: 500, y: 200 },
+  },
+];
+
+// Color unificado para todas las conexiones
+const connectionStyle = { stroke: "#6366f1", strokeWidth: 2 };
+
+// Conexiones iniciales con mejor styling
+const initialEdges: Edge[] = [
+  {
+    id: "e1-2",
+    source: "1",
+    target: "2",
+    style: connectionStyle,
+    animated: true,
+  },
+  {
+    id: "e2-3",
+    source: "2",
+    target: "3",
+    style: connectionStyle,
+    animated: true,
+  },
+];
+
+function FlowCanvas() {
+  const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const { screenToFlowPosition } = useReactFlow();
+  
+  // Estado para ejecución del flujo
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [executionResult, setExecutionResult] = useState<any>(null);
+  const [executionLogs, setExecutionLogs] = useState<string[]>([]);
+  
+  // Variables globales y configuración
+  const { config: globalConfig, saveConfig: saveGlobalConfig } = useGlobalConfig();
+  const [showGlobalSettings, setShowGlobalSettings] = useState(false);
+  
+  // Estado para cambios no guardados
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [lastSavedState, setLastSavedState] = useState('');
+  const [isLoaded, setIsLoaded] = useState(false);
+  
+  // Instancia del ExecutionEngine
+  const executionEngine = useRef(new ExecutionEngine()).current;
+
+  // Función para duplicar nodo
+  const duplicateNode = useCallback((nodeId: string) => {
+    const nodeToDuplicate = nodes.find(n => n.id === nodeId);
+    if (nodeToDuplicate) {
+      const newNode = {
+        ...nodeToDuplicate,
+        id: `${nodeToDuplicate.type}_${Date.now()}`,
+        position: {
+          x: nodeToDuplicate.position.x + 50,
+          y: nodeToDuplicate.position.y + 50,
+        },
+        selected: false,
+      };
+      setNodes(prevNodes => [...prevNodes, newNode]);
+    }
+  }, [nodes, setNodes]);
+
+  const onConnect: OnConnect = useCallback(
+    (params) => {
+      console.log("Conectando:", params);
+      setEdges((eds) =>
+        addEdge(
+          {
+            ...params,
+            style: connectionStyle,
+            animated: true,
+          },
+          eds,
+        ),
+      );
+    },
+    [setEdges],
+  );
+
+  const onDragStart = (
+    event: DragEvent,
+    nodeType: string,
+    componentInfo?: any,
+  ) => {
+    const dragData = {
+      nodeType,
+      componentInfo: componentInfo || null,
+    };
+    event.dataTransfer.setData(
+      "application/reactflow",
+      JSON.stringify(dragData),
+    );
+    event.dataTransfer.effectAllowed = "move";
+  };
+
+  const onDrop = useCallback(
+    (event: DragEvent) => {
+      event.preventDefault();
+
+      const dragDataString = event.dataTransfer.getData(
+        "application/reactflow",
+      );
+      if (!dragDataString) return;
+
+      let dragData;
+      try {
+        dragData = JSON.parse(dragDataString);
+      } catch {
+        // Fallback for old format
+        dragData = { nodeType: dragDataString, componentInfo: null };
+      }
+
+      const position = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+
+      let newNode: Node;
+
+      if (dragData.nodeType === "generated" && dragData.componentInfo) {
+        // Generated component
+        const component = dragData.componentInfo;
+        newNode = {
+          id: getId(),
+          type: "generated", // Custom type for generated components
+          position,
+          data: {
+            label: `${component.ui.icon} ${component.name}`,
+            component: component.name,
+            framework: component.framework,
+            category: component.category,
+            description: component.description,
+            parameters: {}, // Initialize with defaults later
+            ui: component.ui,
+          },
+          style: {
+            background: "white",
+            border: `2px solid ${component.ui.color}`,
+            borderRadius: "12px",
+            minWidth: "200px",
+          },
+        };
+      } else {
+        // Built-in component
+        const nodeTypeConfig = nodeTypes.find(
+          (nt) => nt.type === dragData.nodeType,
+        );
+        newNode = {
+          id: getId(),
+          type: dragData.nodeType,
+          position,
+          data: {
+            label: nodeTypeConfig ? nodeTypeConfig.title : dragData.nodeType,
+          },
+        };
+      }
+
+      setNodes((nds) => nds.concat(newNode));
+    },
+    [screenToFlowPosition, setNodes],
+  );
+
+  // Función para ejecutar el flujo completo
+  const executeFlow = useCallback(async () => {
+    if (isExecuting) return;
+    
+    setIsExecuting(true);
+    setExecutionResult(null);
+    setExecutionLogs([]);
+
+    try {
+      console.log("🚀 Iniciando ejecución del flujo...");
+      console.log("Nodos:", nodes);
+      console.log("Conexiones:", edges);
+
+      // Preparar datos iniciales (podrían venir de un nodo Input o configuración)
+      const initialInputs = {
+        prompt: "Escribe un poema sobre la inteligencia artificial",
+        input: "Hello, how are you today?"
+      };
+
+      // Ejecutar flujo usando el ExecutionEngine
+      const flowId = `flow_${Date.now()}`;
+      const execution = await executionEngine.executeFlow(
+        flowId,
+        nodes,
+        edges,
+        initialInputs
+      );
+
+      console.log("✅ Ejecución completada:", execution);
+
+      // Recopilar logs de todos los nodos
+      const allLogs: string[] = [];
+      execution.results.forEach((result, nodeId) => {
+        allLogs.push(`=== Nodo ${nodeId} ===`);
+        allLogs.push(...result.logs);
+        if (result.error) {
+          allLogs.push(`❌ Error: ${result.error}`);
+        }
+      });
+
+      setExecutionResult(execution);
+      setExecutionLogs(allLogs);
+
+    } catch (error) {
+      console.error("💥 Error ejecutando flujo:", error);
+      setExecutionLogs(prev => [...prev, `💥 Error: ${error instanceof Error ? error.message : String(error)}`]);
+    } finally {
+      setIsExecuting(false);
+    }
+  }, [nodes, edges, executionEngine, isExecuting]);
+
+  const onDragOver = useCallback((event: DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+  }, []);
+
+  // Handler para click en nodos con Option key
+  const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+    if (event.altKey) { // altKey es Option en Mac
+      event.preventDefault();
+      duplicateNode(node.id);
+    }
+  }, [duplicateNode]);
+
+  // Función para guardar el flujo usando React Flow best practices
+  const { getNodes, getEdges, toObject } = useReactFlow();
+  
+  const saveFlow = useCallback(() => {
+    const flow = toObject();
+    localStorage.setItem('ai-flow-canvas-state', JSON.stringify(flow));
+    setLastSavedState(JSON.stringify(flow));
+    setHasUnsavedChanges(false);
+    toast.success('Flujo guardado exitosamente! 💾');
+    console.log('Flujo guardado exitosamente', flow);
+  }, [toObject]);
+
+  // Detectar cambios en el flujo (solo después de cargar)
+  useEffect(() => {
+    if (!isLoaded || !lastSavedState) return;
+    
+    const currentState = JSON.stringify(toObject());
+    const hasChanges = currentState !== lastSavedState;
+    setHasUnsavedChanges(hasChanges);
+  }, [nodes, edges, lastSavedState, toObject, isLoaded]);
+
+  // Alerta de salida sin guardar (solo si hay cambios)
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        event.preventDefault();
+        event.returnValue = '¿Estás seguro de que quieres salir? Hay cambios sin guardar.';
+        return event.returnValue;
+      }
+      // Si no hay cambios, permitir salida sin alerta
+    };
+
+    const handlePopState = (event: PopStateEvent) => {
+      if (hasUnsavedChanges) {
+        const confirm = window.confirm('¿Estás seguro de que quieres salir? Hay cambios sin guardar.');
+        if (!confirm) {
+          window.history.pushState(null, '', window.location.href);
+        }
+      }
+      // Si no hay cambios, permitir navegación sin alerta
+    };
+
+    // Solo agregar listeners si hay cambios sin guardar
+    if (hasUnsavedChanges) {
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      window.addEventListener('popstate', handlePopState);
+    }
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [hasUnsavedChanges]);
+
+  // Cargar estado guardado al inicio usando React Flow format
+  useEffect(() => {
+    const savedFlow = localStorage.getItem('ai-flow-canvas-state');
+    if (savedFlow) {
+      try {
+        const flow = JSON.parse(savedFlow);
+        if (flow.nodes && flow.edges) {
+          setNodes(flow.nodes);
+          setEdges(flow.edges);
+          setLastSavedState(savedFlow);
+        }
+      } catch (error) {
+        console.warn('Error cargando flujo guardado:', error);
+      }
+    } else {
+      // Si no hay estado guardado, usar inicial y marcarlo como guardado
+      const initialState = JSON.stringify({ nodes: initialNodes, edges: initialEdges });
+      setLastSavedState(initialState);
+    }
+    setIsLoaded(true);
+  }, [setNodes, setEdges]);
+
+  // Atajo de teclado Cmd+S / Ctrl+S para guardar
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Cmd+S en Mac o Ctrl+S en Windows/Linux
+      if ((event.metaKey || event.ctrlKey) && event.key === 's') {
+        event.preventDefault(); // Prevenir el save del navegador
+        
+        // Solo guardar si hay cambios
+        if (hasUnsavedChanges) {
+          saveFlow();
+        } else {
+          toast('No hay cambios para guardar', {
+            icon: '💾',
+            style: {
+              background: '#f3f4f6',
+              color: '#6b7280',
+            },
+          });
+        }
+      }
+    };
+
+    // Agregar event listener
+    document.addEventListener('keydown', handleKeyDown);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [hasUnsavedChanges, saveFlow]);
+
+  return (
+    <div className="flex w-screen h-screen bg-gray-50">
+      {/* Sidebar */}
+      <div className="w-72 min-w-72 max-w-72 flex-shrink-0 bg-white border-r border-gray-200 shadow-lg z-20 overflow-y-auto overflow-x-hidden max-h-screen p-4">
+        <div className="flex items-center justify-between px-2 mb-4">
+          <h3 className="text-lg font-bold text-gray-800">
+            Paleta de Nodos
+          </h3>
+          <button
+            onClick={() => setShowGlobalSettings(true)}
+            className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+            title="Variables Globales"
+          >
+            <FiSettings size={16} />
+          </button>
+        </div>
+        
+        {/* Botón Ejecutar Flujo */}
+        <div className="px-6 mb-6">
+          <button
+            onClick={executeFlow}
+            disabled={isExecuting}
+            className={`w-full py-3 px-4 rounded-xl font-bold text-white transition-all duration-200 flex items-center justify-center gap-2 ${
+              isExecuting
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl'
+            }`}
+          >
+            <FiPlay size={16} />
+            {isExecuting ? 'Ejecutando...' : 'Ejecutar Flujo'}
+          </button>
+          
+          {executionResult && (
+            <div className="mt-3 p-3 bg-gray-50 rounded-lg text-xs">
+              <div className="font-bold text-gray-700 mb-2">Estado: {executionResult.status}</div>
+              {executionLogs.length > 0 && (
+                <div className="max-h-32 overflow-y-auto">
+                  {executionLogs.slice(-5).map((log, i) => (
+                    <div key={i} className="text-gray-600 text-[10px] py-1">{log}</div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="flex flex-col gap-4">
+          {nodeTypes.map((nodeType) => (
+            <div
+              key={nodeType.type}
+              className="w-full h-20 bg-white border border-gray-300 rounded-2xl shadow-sm hover:shadow-md hover:border-gray-400 cursor-grab active:cursor-grabbing transition-all flex items-center p-4"
+              draggable
+              onDragStart={(event) => onDragStart(event, nodeType.type)}
+            >
+              <div
+                className={`
+
+                  w-[40px] h-10 rounded-xl bg-gradient-to-br ${nodeType.gradient} flex items-center justify-center text-white shadow-sm flex-shrink-0 pr-6`}
+              >
+                <nodeType.icon size={16} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div
+                  className={`font-semibold text-sm ${nodeType.textColor} truncate mb-1`}
+                >
+                  {nodeType.title}
+                </div>
+                <div className="text-gray-400 text-[10px] truncate">
+                  {nodeType.description}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Instructions */}
+        <div className="mt-8 p-5 bg-gray-50 rounded-2xl shadow-sm">
+          <h4 className="font-semibold text-xs text-gray-700 mb-3">
+            💡 Cómo usar:
+          </h4>
+          <ul className="text-[12px] text-gray-600 space-y-2">
+            <li> Arrastra nodos al canvas</li>
+            <li> Conecta izquierda → derecha</li>
+            <li> Ajuste automático a la cuadrícula</li>
+          </ul>
+        </div>
+      </div>
+
+      {/* Main Canvas */}
+      <div
+        className="flex-1 react-flow-container"
+        ref={reactFlowWrapper}
+        style={{ width: "calc(100vw - 288px)", height: "100vh" }}
+      >
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          nodeTypes={customNodeTypes}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          onDrop={onDrop}
+          onDragOver={onDragOver}
+          onNodeClick={onNodeClick}
+          fitView
+          snapToGrid={true}
+          snapGrid={[16, 16]}
+          connectionMode="loose"
+          defaultEdgeOptions={{ type: "smoothstep", animated: true }}
+          style={{ width: "100%", height: "100%" }}
+          fitViewOptions={{ padding: 0.1 }}
+        >
+          <Controls
+            className="bg-white shadow-2xl border border-gray-200 rounded-3xl backdrop-blur-sm"
+            showZoom={true}
+            showFitView={true}
+            showInteractive={true}
+          />
+          <MiniMap
+            className="bg-white/90 border border-gray-200 rounded-3xl shadow-2xl backdrop-blur-sm"
+            nodeColor={(node) => {
+              switch (node.type) {
+                case "input":
+                  return "#3b82f6";
+                case "agent":
+                  return "#f59e0b";
+                case "output":
+                  return "#10b981";
+                case "prompt":
+                  return "#8b5cf6";
+                case "function":
+                  return "#ef4444";
+                default:
+                  return "#6b7280";
+              }
+            }}
+            maskColor="rgba(139, 92, 246, 0.1)"
+            pannable={true}
+            zoomable={true}
+          />
+          <Background variant="dots" gap={16} size={1.5} color="#e5e7eb" />
+          
+          {/* Panel superior derecho con botones */}
+          <Panel position="top-right">
+            <div className="flex items-center gap-3">
+              {/* Botón Guardar */}
+              <button
+                className={`px-4 py-2 rounded-xl flex items-center gap-2 font-medium transition-all hover:shadow-lg ${
+                  hasUnsavedChanges
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white'
+                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                }`}
+                onClick={saveFlow}
+                disabled={!hasUnsavedChanges}
+                title={hasUnsavedChanges ? 'Guardar cambios (Cmd+S / Ctrl+S)' : 'No hay cambios para guardar'}
+              >
+                <FiSave size={16} />
+                Guardar
+              </button>
+
+              {/* Botón Ejecutar */}
+              <button
+                className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 font-medium transition-all hover:shadow-lg"
+                onClick={executeFlow}
+                disabled={isExecuting}
+              >
+                <FiPlay size={16} />
+                {isExecuting ? 'Ejecutando...' : 'Ejecutar'}
+              </button>
+            </div>
+          </Panel>
+        </ReactFlow>
+
+      </div>
+
+      {/* Global Settings Modal */}
+      <GlobalSettings 
+        isOpen={showGlobalSettings}
+        onClose={() => setShowGlobalSettings(false)}
+        globalConfig={globalConfig}
+        onSave={saveGlobalConfig}
+      />
+      
+      {/* Toast notifications */}
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#fff',
+            color: '#333',
+            border: '1px solid #e5e7eb',
+            borderRadius: '12px',
+            fontSize: '14px',
+            fontWeight: '500',
+            padding: '12px 16px',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+          },
+          success: {
+            iconTheme: {
+              primary: '#10b981',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <ReactFlowProvider>
+      <FlowCanvas />
+    </ReactFlowProvider>
+  );
+}
+
+export default App;

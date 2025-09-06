@@ -1,0 +1,39 @@
+name: VectorStoreIndex
+framework: llamaindex
+category: memory
+description: Creates a vector store index from documents for semantic search
+
+inputs:
+  - name: documents
+    type: Document[]
+    required: true
+    description: Documents to index
+  - name: service_context
+    type: ServiceContext
+    required: false
+    description: Service context configuration
+
+outputs:
+  - name: index
+    type: VectorStoreIndex
+    required: true
+    description: Created vector index
+
+parameters:
+  chunk_size:
+    type: number
+    default: 1024
+    description: Size of document chunks
+  chunk_overlap:
+    type: number
+    default: 20
+    description: Overlap between chunks
+  embedding_model:
+    type: string
+    default: "text-embedding-ada-002"
+    options: ["text-embedding-ada-002", "text-embedding-3-small"]
+
+ui:
+  icon: "🗄️"
+  color: "#10b981"
+  position: [200, 100]

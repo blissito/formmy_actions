@@ -1,0 +1,59 @@
+name: RAGPipeline
+framework: custom
+category: processor
+description: Complete RAG pipeline with vector search and answer generation
+
+inputs:
+  - name: query
+    type: string
+    required: true
+    description: User question
+  - name: documents
+    type: Document[]
+    required: false
+    description: Optional document override
+  - name: context
+    type: string
+    required: false
+    description: Additional context
+
+outputs:
+  - name: answer
+    type: string
+    required: true
+    description: Generated answer
+  - name: sources
+    type: Document[]
+    required: true
+    description: Source documents used
+  - name: confidence
+    type: number
+    required: false
+    description: Confidence score
+
+parameters:
+  retrieval_count:
+    type: number
+    default: 5
+    min: 1
+    max: 20
+    description: Number of documents to retrieve
+  model_name:
+    type: string
+    default: "gpt-4"
+    options: ["gpt-3.5-turbo", "gpt-4", "claude-3-sonnet"]
+  temperature:
+    type: number
+    default: 0.1
+    min: 0
+    max: 1
+    description: Generation temperature
+  include_sources:
+    type: boolean
+    default: true
+    description: Include source references
+
+ui:
+  icon: "🔍"
+  color: "#ec4899"
+  position: [400, 300]

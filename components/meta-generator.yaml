@@ -1,0 +1,47 @@
+name: BootstrapGenerator
+framework: meta
+category: tool
+description: Generates React Flow components from YAML definitions - the tool that builds itself!
+
+inputs:
+  - name: yaml_definition
+    type: string
+    required: true
+    description: YAML component definition
+  - name: target_framework
+    type: string
+    required: false
+    description: Target framework filter
+
+outputs:
+  - name: react_component
+    type: ReactComponent
+    required: true
+    description: Generated React component
+  - name: flow_node
+    type: ReactFlowNode
+    required: true
+    description: React Flow node definition
+
+parameters:
+  generate_typescript:
+    type: boolean
+    default: true
+    description: Generate TypeScript instead of JavaScript
+  include_tests:
+    type: boolean
+    default: false
+    description: Generate test files
+  output_directory:
+    type: string
+    default: "./src/components"
+    description: Output directory for generated files
+  self_improvement_mode:
+    type: boolean
+    default: false
+    description: Enable self-improvement capabilities
+
+ui:
+  icon: "⚡"
+  color: "#8b5cf6"
+  position: [300, 300]

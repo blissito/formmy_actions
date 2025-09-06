@@ -1,0 +1,45 @@
+name: ChatOpenAI
+framework: langchain
+category: processor
+description: OpenAI Chat model for conversational AI
+
+inputs:
+  - name: messages
+    type: BaseMessage[]
+    required: true
+    description: Input chat messages
+  - name: system_prompt
+    type: string
+    required: false
+    description: System prompt override
+
+outputs:
+  - name: response
+    type: BaseMessage
+    required: true
+    description: AI response message
+  - name: token_usage
+    type: TokenUsage
+    required: false
+    description: Token consumption info
+
+parameters:
+  model_name:
+    type: string
+    default: "gpt-3.5-turbo"
+    options: ["gpt-3.5-turbo", "gpt-4", "gpt-4-turbo", "gpt-4o"]
+  temperature:
+    type: number
+    default: 0.7
+    min: 0
+    max: 2
+    description: Sampling temperature
+  max_tokens:
+    type: number
+    default: null
+    description: Maximum tokens to generate
+
+ui:
+  icon: "🤖"
+  color: "#f59e0b"
+  position: [500, 100]

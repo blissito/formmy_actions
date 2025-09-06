@@ -1,0 +1,35 @@
+name: BuggyComponent
+framework: test
+category: processor
+description: Intentionally buggy component to test validation loop
+
+inputs:
+  - name: missing_handle_input
+    type: string
+    required: true
+    description: Input that will have missing handle
+  - name: normal_input
+    type: string
+    required: false
+    description: Normal input
+
+outputs:
+  - name: missing_handle_output
+    type: string
+    required: true
+    description: Output that will have missing handle
+  - name: normal_output
+    type: string
+    required: false
+    description: Normal output
+
+parameters:
+  test_param:
+    type: string
+    default: "test"
+    description: Test parameter
+
+ui:
+  icon: "🐛"
+  color: "#ef4444" 
+  position: [100, 100]

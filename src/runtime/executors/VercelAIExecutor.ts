@@ -79,9 +79,14 @@ export class VercelAIExecutor extends ComponentExecutor {
     }
 
     logs.push(`📝 Using model: ${config.model}`);
-    logs.push(`🌡️ Temperature: ${config.temperature}`);
-    logs.push(`📊 Max tokens: ${config.maxTokens}`);
+    logs.push(`🌡️ Temperature: ${config.temperature}`);  
     logs.push(`🌊 Streaming: ${config.stream}`);
+    // Get API key from global config  
+    const globalConfig = this.getGlobalConfig();
+    const apiKey = globalConfig.openaiApiKey || process.env.VITE_OPENAI_API_KEY;
+    
+    logs.push(`🔑 API Key available: ${apiKey ? 'Yes' : 'No'}`);
+    logs.push(`📝 Prompt: "${prompt}"`);
 
     try {
       // Check if there's an external API endpoint for this component
@@ -186,7 +191,12 @@ export class VercelAIExecutor extends ComponentExecutor {
     const apiKey = globalConfig.openaiApiKey || process.env.VITE_OPENAI_API_KEY;
     
     if (!apiKey) {
-      throw new Error('OpenAI API key not found. Please set it in Global Settings.');
+      logs.push('⚠️ No OpenAI API key found, using mock response');
+      return {
+        response: `Mock AI Response for: "${prompt}"\n\nThis is a simulated response because no OpenAI API key was provided. To get real responses:\n1. Click the settings button ⚙️ in the sidebar\n2. Add your OpenAI API key\n3. Run the flow again`,
+        tokens: { prompt: 0, completion: 0, total: 0 },
+        finishReason: 'stop'
+      };
     }
     
     
@@ -228,7 +238,13 @@ export class VercelAIExecutor extends ComponentExecutor {
     const apiKey = globalConfig.openaiApiKey || process.env.VITE_OPENAI_API_KEY;
     
     if (!apiKey) {
-      throw new Error('OpenAI API key not found. Please set it in Global Settings.');
+      logs.push('⚠️ No OpenAI API key found, using mock response');
+      return {
+        response: `Mock AI Response for: "${prompt}"\n\nThis is a simulated response because no OpenAI API key was provided. To get real responses:\n1. Click the settings button ⚙️ in the sidebar\n2. Add your OpenAI API key\n3. Run the flow again`,
+        stream: [`Mock AI Response for: "${prompt}"`, `\n\nThis is a simulated response...`],
+        tokens: { prompt: 0, completion: 0, total: 0 },
+        finishReason: 'stop'
+      };
     }
     
     

@@ -81,9 +81,9 @@ export class ExecutionEngine {
         // Notify of the result
         if (onNodeStatusUpdate) {
           if (result.status === 'error') {
-            onNodeStatusUpdate(node.id, 'error', result);
+            onNodeStatusUpdate(node.id, 'error', { ...result, logs: result.logs });
           } else {
-            onNodeStatusUpdate(node.id, 'success', result.outputs);
+            onNodeStatusUpdate(node.id, 'success', { ...result.outputs, logs: result.logs });
           }
         }
         

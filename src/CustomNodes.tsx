@@ -507,6 +507,49 @@ export function OutputNode({ data }: NodeProps) {
   }, [data?.result]);
 
   const hasResult = result !== null && result !== undefined;
+  const executionStatus = data?.executionStatus || 'idle';
+
+  const renderLogs = () => {
+    if (!isExpanded || !data?.logs || !Array.isArray(data.logs) || data.logs.length === 0) {
+      return null;
+    }
+
+    return (
+      <div className="mt-2 pt-2 border-t border-gray-200">
+        <div className="text-[10px] text-gray-500 font-mono">
+          <div><strong>Logs de ejecución:</strong></div>
+          {data.logs.map((log: any, i: number) => (
+            <div key={i} className="py-0.5">{String(log)}</div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // Get background color based on execution status
+  const getBackgroundColor = () => {
+    switch (executionStatus) {
+      case 'success':
+        return 'bg-green-50'; // Light green when successful
+      case 'error':
+        return 'bg-red-50'; // Light red when error
+      case 'running':
+        return 'bg-blue-50'; // Light blue when running
+      default:
+        return 'bg-green-100'; // Default green
+    }
+  };
+
+  const getBorderColor = () => {
+    switch (executionStatus) {
+      case 'error':
+        return 'border-red-400';
+      case 'running':
+        return 'border-blue-400 animate-pulse';
+      default:
+        return 'border-green-400';
+    }
+  };
 
   const handleCopy = async () => {
     if (!result) return;
@@ -530,12 +573,26 @@ export function OutputNode({ data }: NodeProps) {
 
   return (
     <>
-      <div className={`min-w-[200px] ${isExpanded ? 'min-h-[300px]' : 'min-h-[80px]'} bg-green-100 border border-green-400 rounded-2xl p-3 transition-all duration-200`}>
+      <div className={`min-w-[200px] ${isExpanded ? 'min-h-[300px]' : 'min-h-[80px]'} ${getBackgroundColor()} border-2 ${getBorderColor()} rounded-2xl p-3 transition-all duration-200`}>
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <HiOutlineSparkles className="text-green-600" size={16} />
-            <span className="text-green-800 text-xs font-medium">Resultado</span>
+            {executionStatus === 'error' ? (
+              <div className="text-red-600">❌</div>
+            ) : executionStatus === 'running' ? (
+              <div className="text-blue-600 animate-spin">⏳</div>
+            ) : (
+              <HiOutlineSparkles className="text-green-600" size={16} />
+            )}
+            <span className={`text-xs font-medium ${
+              executionStatus === 'error' ? 'text-red-800' : 
+              executionStatus === 'running' ? 'text-blue-800' : 
+              'text-green-800'
+            }`}>
+              {executionStatus === 'error' ? 'Error' : 
+               executionStatus === 'running' ? 'Ejecutando...' : 
+               'Resultado'}
+            </span>
           </div>
           {hasResult && (
             <div className="flex gap-1">
@@ -567,8 +624,12 @@ export function OutputNode({ data }: NodeProps) {
 
         {/* Result Display */}
         {hasResult ? (
-          <div className={`bg-white rounded-lg p-2 border border-green-200 ${isExpanded ? 'max-h-[250px]' : 'max-h-[40px]'} overflow-y-auto transition-all duration-200`}>
-            <div className="text-xs text-gray-700">
+          <div className={`bg-white rounded-lg p-2 border ${
+            executionStatus === 'error' ? 'border-red-200' : 'border-green-200'
+          } ${isExpanded ? 'max-h-[250px]' : 'max-h-[40px]'} overflow-y-auto transition-all duration-200`}>
+            <div className={`text-xs ${
+              executionStatus === 'error' ? 'text-red-700' : 'text-gray-700'
+            }`}>
               {isExpanded ? (
                 <pre className="whitespace-pre-wrap font-mono text-[10px]">
                   {typeof result === 'string' ? result : JSON.stringify(result, null, 2)}
@@ -582,10 +643,20 @@ export function OutputNode({ data }: NodeProps) {
                 </div>
               )}
             </div>
+            
+            {renderLogs()}
           </div>
         ) : (
           <div className="text-center">
-            <div className="text-gray-500 text-xs">Esperando resultado...</div>
+            <div className={`text-xs ${
+              executionStatus === 'running' ? 'text-blue-600' :
+              executionStatus === 'error' ? 'text-red-600' : 
+              'text-gray-500'
+            }`}>
+              {executionStatus === 'running' ? 'Ejecutando...' :
+               executionStatus === 'error' ? 'Error en la ejecución' :
+               'Esperando resultado...'}
+            </div>
           </div>
         )}
       </div>

@@ -1,6 +1,6 @@
 import { BootstrapGenerator } from './BootstrapGenerator';
 import type { ComponentYAML } from '../types/ComponentTypes';
-import { ComponentValidator, ValidationResult } from '../validator/ComponentValidator';
+import { ComponentValidator, type ValidationResult } from '../validator/ComponentValidator';
 import fs from 'fs';
 
 export interface AIFeedback {

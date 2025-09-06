@@ -1,4 +1,4 @@
-import { ComponentExecutor, ExecutionContext, ExecutionResult, RuntimeType } from '../ExecutionEngine';
+import { ComponentExecutor, type ExecutionContext, type ExecutionResult, type RuntimeType } from '../ExecutionEngine';
 
 export class LangChainExecutor extends ComponentExecutor {
   runtime: RuntimeType = 'langchain';
@@ -88,7 +88,7 @@ export class LangChainExecutor extends ComponentExecutor {
     logs.push('Initializing vector store...');
     
     const documents = context.inputs.documents || [];
-    const embeddings = context.inputs.embeddings || null;
+    // const embeddings = context.inputs.embeddings || null;
     const collectionName = context.parameters.collection_name || 'default';
     const distanceMetric = context.parameters.distance_metric || 'cosine';
 
@@ -131,7 +131,7 @@ export class LangChainExecutor extends ComponentExecutor {
     logs.push('Executing retrieval-based QA...');
     
     const query = context.inputs.query || '';
-    const vectorStore = context.inputs.vector_store || {};
+    // const vectorStore = context.inputs.vector_store || {};
     const k = context.parameters.k || 4;
     const returnSourceDocs = context.parameters.return_source_documents || false;
 

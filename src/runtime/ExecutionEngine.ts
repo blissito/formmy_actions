@@ -49,7 +49,8 @@ export class ExecutionEngine {
     flowId: string, 
     nodes: Node[], 
     edges: Edge[], 
-    inputs: Record<string, any> = {}
+    inputs: Record<string, any> = {},
+    onNodeStatusUpdate?: (nodeId: string, status: 'running' | 'success' | 'error', result?: any) => void
   ): Promise<FlowExecution> {
     console.log(`🚀 Starting flow execution: ${flowId}`);
     
@@ -69,8 +70,22 @@ export class ExecutionEngine {
 
       // 2. Execute nodes in order
       for (const node of executionOrder) {
-        const result = await this.executeNode(node, execution, inputs);
+        // Notify that we're starting execution of this node
+        if (onNodeStatusUpdate) {
+          onNodeStatusUpdate(node.id, 'running');
+        }
+
+        const result = await this.executeNode(node, inputs);
         execution.results.set(node.id, result);
+        
+        // Notify of the result
+        if (onNodeStatusUpdate) {
+          if (result.status === 'error') {
+            onNodeStatusUpdate(node.id, 'error', result);
+          } else {
+            onNodeStatusUpdate(node.id, 'success', result.outputs);
+          }
+        }
         
         if (result.status === 'error') {
           execution.status = 'error';
@@ -99,7 +114,6 @@ export class ExecutionEngine {
 
   private async executeNode(
     node: Node, 
-    execution: FlowExecution, 
     availableInputs: Record<string, any>
   ): Promise<ExecutionResult> {
     const startTime = Date.now();
@@ -107,9 +121,9 @@ export class ExecutionEngine {
     const context: ExecutionContext = {
       nodeId: node.id,
       inputs: this.gatherNodeInputs(node, availableInputs),
-      parameters: node.data.parameters || {},
-      framework: node.data.framework || 'custom',
-      componentName: node.data.component || node.type || 'unknown'
+      parameters: node.data?.parameters || {},
+      framework: String(node.data?.framework || 'custom'),
+      componentName: String(node.data?.component || node.type || 'unknown')
     };
 
     console.log(`⚡ Executing node ${node.id} (${context.componentName})`);
@@ -151,7 +165,7 @@ export class ExecutionEngine {
     const nodeInputs: Record<string, any> = {};
     
     // Map available inputs to node's expected inputs
-    if (node.data.inputs) {
+    if (node.data?.inputs && Array.isArray(node.data.inputs)) {
       for (const input of node.data.inputs) {
         if (availableInputs[input.name] !== undefined) {
           nodeInputs[input.name] = availableInputs[input.name];
@@ -227,6 +241,24 @@ export class ExecutionEngine {
       console.log('✅ Registered VercelAI executor');
     }).catch(error => {
       console.warn('⚠️ Failed to register VercelAI executor:', error);
+    });
+
+    // Import and register LangChain executor
+    import('./executors/LangChainExecutor').then(({ LangChainExecutor }) => {
+      const langchainExecutor = new LangChainExecutor();
+      this.registerExecutor(langchainExecutor);
+      console.log('✅ Registered LangChain executor');
+    }).catch(error => {
+      console.warn('⚠️ Failed to register LangChain executor:', error);
+    });
+
+    // Import and register TypeScript executor
+    import('./executors/TypeScriptExecutor').then(({ TypeScriptExecutor }) => {
+      const typescriptExecutor = new TypeScriptExecutor();
+      this.registerExecutor(typescriptExecutor);
+      console.log('✅ Registered TypeScript executor');
+    }).catch(error => {
+      console.warn('⚠️ Failed to register TypeScript executor:', error);
     });
   }
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { ComponentYAML, GeneratedComponentInfo } from '../types/ComponentTypes';
+import type { GeneratedComponentInfo } from '../types/ComponentTypes';
 
 export function useGeneratedComponents() {
   const [components, setComponents] = useState<GeneratedComponentInfo[]>([]);

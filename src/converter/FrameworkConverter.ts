@@ -1,4 +1,4 @@
-import { FrameworkComponent, ConvertedNode, ConversionConfig, ReactFlowPort } from './types';
+import { type FrameworkComponent, type ConvertedNode, type ConversionConfig, type ReactFlowPort } from './types';
 
 export class FrameworkConverter {
   private config: ConversionConfig;

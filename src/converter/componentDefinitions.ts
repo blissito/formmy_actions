@@ -1,4 +1,4 @@
-import { FrameworkComponent } from './types';
+import { type FrameworkComponent } from './types';
 
 // LlamaIndex Components
 export const llamaIndexComponents: FrameworkComponent[] = [

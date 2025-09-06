@@ -1,4 +1,4 @@
-import { ComponentExecutor, ExecutionContext, ExecutionResult, RuntimeType } from '../ExecutionEngine';
+import { ComponentExecutor, type ExecutionContext, type ExecutionResult, type RuntimeType } from '../ExecutionEngine';
 
 export class TypeScriptExecutor extends ComponentExecutor {
   runtime: RuntimeType = 'typescript';
@@ -191,7 +191,7 @@ export class TypeScriptExecutor extends ComponentExecutor {
     
     const url = context.parameters.url || context.inputs.url;
     const method = context.parameters.method || 'GET';
-    const headers = context.parameters.headers || {};
+    // const headers = context.parameters.headers || {};
     const body = context.inputs.body || context.parameters.body;
 
     logs.push(`${method} ${url}`);
@@ -241,7 +241,7 @@ export class TypeScriptExecutor extends ComponentExecutor {
     logs.push('Executing RAG Pipeline...');
     
     const query = context.inputs.query || '';
-    const documents = context.inputs.documents || [];
+    // const documents = context.inputs.documents || [];
     const additionalContext = context.inputs.context || '';
     
     const retrievalCount = context.parameters.retrieval_count || 5;

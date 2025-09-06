@@ -1,4 +1,4 @@
-import { useCallback, useRef, DragEvent, useState, useEffect } from "react";
+import { useCallback, useRef, useState, useEffect, type DragEvent } from "react";
 import toast, { Toaster } from 'react-hot-toast';
 import {
   ReactFlow,
@@ -6,6 +6,8 @@ import {
   MiniMap,
   Controls,
   Background,
+  BackgroundVariant,
+  ConnectionMode,
   Panel,
   useNodesState,
   useEdgesState,
@@ -24,11 +26,9 @@ import {
   FunctionNode,
   ToolNode,
 } from "./CustomNodes";
-import { GeneratedComponentsSidebar } from "./components/GeneratedComponentsSidebar";
 import { GlobalSettings, useGlobalConfig } from "./components/GlobalSettings";
 import { ExecutionEngine } from "./runtime/ExecutionEngine";
-import { FiEdit, FiCheckCircle, FiFileText, FiZap, FiPlay, FiSettings, FiSave } from "react-icons/fi";
-import { RiFlowChart } from "react-icons/ri";
+import { FiEdit, FiFileText, FiZap, FiPlay, FiSettings, FiSave } from "react-icons/fi";
 import { HiOutlineSparkles } from "react-icons/hi2";
 import { RiRobot2Line } from "react-icons/ri";
 
@@ -305,22 +305,72 @@ function FlowCanvas() {
       console.log("Nodos:", nodes);
       console.log("Conexiones:", edges);
 
-      // Preparar datos iniciales (podrían venir de un nodo Input o configuración)
+      // Obtener datos del nodo Input si existe
+      const inputNode = nodes.find(n => n.type === 'input');
+      const inputText = inputNode?.data?.text || inputNode?.data?.label || "Hello, how are you today?";
+
       const initialInputs = {
-        prompt: "Escribe un poema sobre la inteligencia artificial",
-        input: "Hello, how are you today?"
+        prompt: inputText,
+        input: inputText
       };
 
-      // Ejecutar flujo usando el ExecutionEngine
+      // Marcar todos los nodos como idle al inicio
+      setNodes(prevNodes => prevNodes.map(node => ({
+        ...node,
+        data: { ...node.data, executionStatus: 'idle' }
+      })));
+
+      // Crear un callback para actualizar el estado de los nodos
+      const updateNodeStatus = (nodeId: string, status: 'running' | 'success' | 'error', result?: any) => {
+        setNodes(prevNodes => prevNodes.map(node => 
+          node.id === nodeId 
+            ? { 
+                ...node, 
+                data: { 
+                  ...node.data, 
+                  executionStatus: status,
+                  result: result 
+                } 
+              }
+            : node
+        ));
+      };
+
+      // Ejecutar flujo usando el ExecutionEngine con seguimiento de estado
       const flowId = `flow_${Date.now()}`;
+      
+      // Mostrar que estamos iniciando
+      toast.loading('Ejecutando flujo...', { id: 'flow-execution' });
+
       const execution = await executionEngine.executeFlow(
         flowId,
         nodes,
         edges,
-        initialInputs
+        initialInputs,
+        updateNodeStatus
       );
 
       console.log("✅ Ejecución completada:", execution);
+
+      // Actualizar Output nodes con resultados
+      const outputNodes = nodes.filter(n => n.type === 'output');
+      if (outputNodes.length > 0 && execution.results.size > 0) {
+        const lastResult = Array.from(execution.results.values()).pop();
+        if (lastResult && lastResult.outputs.response) {
+          setNodes(prevNodes => prevNodes.map(node => 
+            node.type === 'output'
+              ? { 
+                  ...node, 
+                  data: { 
+                    ...node.data, 
+                    result: lastResult.outputs.response,
+                    executionStatus: 'success'
+                  } 
+                }
+              : node
+          ));
+        }
+      }
 
       // Recopilar logs de todos los nodos
       const allLogs: string[] = [];
@@ -335,13 +385,23 @@ function FlowCanvas() {
       setExecutionResult(execution);
       setExecutionLogs(allLogs);
 
+      // Success toast
+      toast.success('¡Flujo ejecutado exitosamente!', { id: 'flow-execution' });
+
     } catch (error) {
       console.error("💥 Error ejecutando flujo:", error);
       setExecutionLogs(prev => [...prev, `💥 Error: ${error instanceof Error ? error.message : String(error)}`]);
+      toast.error(`Error: ${error instanceof Error ? error.message : String(error)}`, { id: 'flow-execution' });
+      
+      // Mark all nodes as error
+      setNodes(prevNodes => prevNodes.map(node => ({
+        ...node,
+        data: { ...node.data, executionStatus: 'error' }
+      })));
     } finally {
       setIsExecuting(false);
     }
-  }, [nodes, edges, executionEngine, isExecuting]);
+  }, [nodes, edges, executionEngine, isExecuting, setNodes]);
 
   const onDragOver = useCallback((event: DragEvent) => {
     event.preventDefault();
@@ -357,7 +417,7 @@ function FlowCanvas() {
   }, [duplicateNode]);
 
   // Función para guardar el flujo usando React Flow best practices
-  const { getNodes, getEdges, toObject } = useReactFlow();
+  const { toObject } = useReactFlow();
   
   const saveFlow = useCallback(() => {
     const flow = toObject();
@@ -388,7 +448,7 @@ function FlowCanvas() {
       // Si no hay cambios, permitir salida sin alerta
     };
 
-    const handlePopState = (event: PopStateEvent) => {
+    const handlePopState = () => {
       if (hasUnsavedChanges) {
         const confirm = window.confirm('¿Estás seguro de que quieres salir? Hay cambios sin guardar.');
         if (!confirm) {
@@ -569,7 +629,7 @@ function FlowCanvas() {
           fitView
           snapToGrid={true}
           snapGrid={[16, 16]}
-          connectionMode="loose"
+          connectionMode={ConnectionMode.Strict}
           defaultEdgeOptions={{ type: "smoothstep", animated: true }}
           style={{ width: "100%", height: "100%" }}
           fitViewOptions={{ padding: 0.1 }}
@@ -602,7 +662,7 @@ function FlowCanvas() {
             pannable={true}
             zoomable={true}
           />
-          <Background variant="dots" gap={16} size={1.5} color="#e5e7eb" />
+          <Background variant={BackgroundVariant.Dots} gap={16} size={1.5} color="#e5e7eb" />
           
           {/* Panel superior derecho con botones */}
           <Panel position="top-right">

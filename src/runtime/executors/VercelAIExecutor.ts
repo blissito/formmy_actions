@@ -1,6 +1,6 @@
 import { generateText, streamText } from 'ai';
 import { openai } from '@ai-sdk/openai';
-import { ComponentExecutor, ExecutionContext, ExecutionResult, RuntimeType } from '../ExecutionEngine';
+import { ComponentExecutor, type ExecutionContext, type ExecutionResult, type RuntimeType } from '../ExecutionEngine';
 
 export class VercelAIExecutor extends ComponentExecutor {
   runtime: RuntimeType = 'vercel-ai';
@@ -180,16 +180,17 @@ export class VercelAIExecutor extends ComponentExecutor {
       throw new Error('OpenAI API key not found. Please set it in Global Settings.');
     }
     
-    const maxTokens = config.maxTokens === 'unlimited' ? undefined : config.maxTokens;
+    
+    process.env.OPENAI_API_KEY = apiKey;
+    const model = openai(config.model);
     
     const result = await generateText({
-      model: openai(config.model, { apiKey }),
+      model,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: prompt }
       ],
       temperature: config.temperature,
-      maxTokens: maxTokens,
     });
 
     logs.push(`✅ Generated ${result.text.length} characters`);
@@ -197,8 +198,8 @@ export class VercelAIExecutor extends ComponentExecutor {
     return {
       response: result.text,
       tokens: {
-        prompt: result.usage?.promptTokens || 0,
-        completion: result.usage?.completionTokens || 0,
+        prompt: result.usage?.inputTokens || 0,
+        completion: result.usage?.outputTokens || 0,
         total: result.usage?.totalTokens || 0
       },
       finishReason: result.finishReason
@@ -221,16 +222,17 @@ export class VercelAIExecutor extends ComponentExecutor {
       throw new Error('OpenAI API key not found. Please set it in Global Settings.');
     }
     
-    const maxTokens = config.maxTokens === 'unlimited' ? undefined : config.maxTokens;
+    
+    process.env.OPENAI_API_KEY = apiKey;
+    const model = openai(config.model);
     
     const stream = await streamText({
-      model: openai(config.model, { apiKey }),
+      model,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: prompt }
       ],
       temperature: config.temperature,
-      maxTokens: maxTokens,
     });
 
     let fullResponse = '';
@@ -242,7 +244,6 @@ export class VercelAIExecutor extends ComponentExecutor {
     }
 
     const usage = await stream.usage;
-    const response = await stream.response;
 
     logs.push(`📝 Streamed ${chunks.length} chunks, total: ${fullResponse.length} characters`);
 
@@ -250,11 +251,11 @@ export class VercelAIExecutor extends ComponentExecutor {
       response: fullResponse,
       stream: chunks,
       tokens: {
-        prompt: usage?.promptTokens || 0,
-        completion: usage?.completionTokens || 0,
+        prompt: usage?.inputTokens || 0,
+        completion: usage?.outputTokens || 0,
         total: usage?.totalTokens || 0
       },
-      finishReason: response.finishReason
+      finishReason: 'stop'
     };
   }
 }

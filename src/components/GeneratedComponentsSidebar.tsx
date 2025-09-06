@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { DragEvent } from 'react';
+import React, { useState, type DragEvent } from 'react';
 import { useGeneratedComponents } from '../hooks/useGeneratedComponents';
 
 interface GeneratedComponentsSidebarProps {

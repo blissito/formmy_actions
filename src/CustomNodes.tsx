@@ -2,7 +2,6 @@ import React from "react";
 import { Handle, Position, type NodeProps, useReactFlow } from "@xyflow/react";
 import {
   FiEdit,
-  FiCheckCircle,
   FiFileText,
   FiZap,
   FiSettings,
@@ -56,7 +55,7 @@ function BaseCard({
 }
 
 export function InputNode({ data, id }: NodeProps) {
-  const [text, setText] = React.useState(data?.text || "");
+  const [text, setText] = React.useState<string>(String(data?.text ?? ""));
   const [isFocused, setIsFocused] = React.useState(false);
   const [isExpanded, setIsExpanded] = React.useState(false);
   const { getNodes, setNodes } = useReactFlow();
@@ -157,6 +156,9 @@ export function AgentNode({ data, id }: NodeProps) {
   const [availableModels, setAvailableModels] = React.useState<ModelInfo[]>([]);
   const [isLoadingModels, setIsLoadingModels] = React.useState(false);
   const { getNodes, setNodes } = useReactFlow();
+  
+  // Execution state
+  const executionStatus = data?.executionStatus || 'idle'; // idle, running, success, error
 
   // Cargar configuración global desde localStorage
   const globalConfig = React.useMemo(() => {
@@ -169,10 +171,10 @@ export function AgentNode({ data, id }: NodeProps) {
   }, []);
 
   const [config, setConfig] = React.useState({
-    model: data?.model || globalConfig.defaultModel || "gpt-3.5-turbo",
+    model: String(data?.model || globalConfig.defaultModel || "gpt-3.5-turbo"),
     temperature: data?.temperature ?? globalConfig.defaultTemperature ?? 0.7,
     stream: data?.stream ?? globalConfig.defaultStream ?? true,
-    agentType: data?.agentType || "openai", // openai, anthropic, llamaindex
+    agentType: String(data?.agentType || "openai"), // openai, anthropic, llamaindex
   });
 
   // Cargar modelos disponibles cuando se abre la configuración
@@ -240,6 +242,32 @@ export function AgentNode({ data, id }: NodeProps) {
 
   const colors = getProviderColors();
 
+  // Get status-based styling
+  const getStatusStyling = () => {
+    if (executionStatus === 'running') {
+      return {
+        borderStyle: 'animate-pulse border-4 border-blue-400',
+        bgOverlay: 'absolute inset-0 bg-blue-100 bg-opacity-20 rounded-3xl'
+      };
+    } else if (executionStatus === 'success') {
+      return {
+        borderStyle: 'border-2 border-green-400',
+        bgOverlay: 'absolute inset-0 bg-green-100 bg-opacity-10 rounded-3xl'
+      };
+    } else if (executionStatus === 'error') {
+      return {
+        borderStyle: 'border-2 border-red-400',
+        bgOverlay: 'absolute inset-0 bg-red-100 bg-opacity-20 rounded-3xl'
+      };
+    }
+    return {
+      borderStyle: `border-2 ${colors.border}`,
+      bgOverlay: ''
+    };
+  };
+
+  const statusStyling = getStatusStyling();
+
   const handleDuplicate = () => {
     const nodes = getNodes();
     const currentNode = nodes.find((n) => n.id === id);
@@ -267,17 +295,33 @@ export function AgentNode({ data, id }: NodeProps) {
   return (
     <>
       <div
-        className={`min-w-[200px] p-4 border-2 ${colors.border} rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-200 relative`}
+        className={`min-w-[200px] p-4 ${statusStyling.borderStyle} rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-200 relative`}
         style={{ backgroundColor: colors.background }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
+        {/* Status overlay */}
+        {statusStyling.bgOverlay && <div className={statusStyling.bgOverlay}></div>}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <div className={`w-[30px] h-8 rounded-xl bg-gradient-to-br ${colors.iconBg} flex items-center justify-center text-white shadow-md`}>
+            <div className={`w-[30px] h-8 rounded-xl bg-gradient-to-br ${colors.iconBg} flex items-center justify-center text-white shadow-md relative`}>
               <TbRobot size={16} />
+              {executionStatus === 'running' && (
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+              )}
+              {executionStatus === 'success' && (
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full"></div>
+              )}
+              {executionStatus === 'error' && (
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></div>
+              )}
             </div>
-            <div className={`${colors.textColor} font-bold text-sm`}>Agente IA</div>
+            <div className={`${colors.textColor} font-bold text-sm`}>
+              Agente IA
+              {executionStatus === 'running' && (
+                <span className="ml-1 text-blue-600 text-xs">(ejecutando...)</span>
+              )}
+            </div>
           </div>
           <div className="flex gap-1">
             {isHovered && (
@@ -382,7 +426,7 @@ export function AgentNode({ data, id }: NodeProps) {
         )}
 
         <div className="text-gray-600 text-xs text-center font-medium">
-          {config.agentType.toUpperCase()}: {config.model}
+          {String(config.agentType).toUpperCase()}: {config.model}
         </div>
         <div className="text-gray-500 text-xs text-center">
           T: {config.temperature} | Stream: {config.stream ? "ON" : "OFF"}
@@ -449,11 +493,65 @@ export function AgentNode({ data, id }: NodeProps) {
 }
 
 export function OutputNode({ data }: NodeProps) {
+  const [isExpanded, setIsExpanded] = React.useState(false);
+  const [result, setResult] = React.useState(data?.result || null);
+
+  // Update result when data changes
+  React.useEffect(() => {
+    if (data?.result) {
+      setResult(data.result);
+    }
+  }, [data?.result]);
+
+  const hasResult = result !== null && result !== undefined;
+
   return (
     <>
-      <div className="w-40 h-20 bg-green-100 border border-green-400 rounded-2xl flex flex-col items-center justify-center p-3">
-        <HiOutlineSparkles className="text-green-600 mb-2" size={16} />
-        <span className="text-green-800 text-xs font-medium">Resultado</span>
+      <div className={`min-w-[200px] ${isExpanded ? 'min-h-[300px]' : 'min-h-[80px]'} bg-green-100 border border-green-400 rounded-2xl p-3 transition-all duration-200`}>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <HiOutlineSparkles className="text-green-600" size={16} />
+            <span className="text-green-800 text-xs font-medium">Resultado</span>
+          </div>
+          {hasResult && (
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="w-6 h-6 bg-white rounded-lg shadow-sm border border-gray-200 flex items-center justify-center hover:bg-green-50 transition-colors"
+              title={isExpanded ? "Contraer" : "Expandir"}
+            >
+              {isExpanded ? (
+                <FiMinimize2 size={12} className="text-green-600" />
+              ) : (
+                <FiMaximize2 size={12} className="text-green-600" />
+              )}
+            </button>
+          )}
+        </div>
+
+        {/* Result Display */}
+        {hasResult ? (
+          <div className={`bg-white rounded-lg p-2 border border-green-200 ${isExpanded ? 'max-h-[250px]' : 'max-h-[40px]'} overflow-y-auto transition-all duration-200`}>
+            <div className="text-xs text-gray-700">
+              {isExpanded ? (
+                <pre className="whitespace-pre-wrap font-mono text-[10px]">
+                  {typeof result === 'string' ? result : JSON.stringify(result, null, 2)}
+                </pre>
+              ) : (
+                <div className="truncate">
+                  {typeof result === 'string' 
+                    ? result.substring(0, 50) + (result.length > 50 ? '...' : '')
+                    : JSON.stringify(result).substring(0, 50) + '...'
+                  }
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="text-center">
+            <div className="text-gray-500 text-xs">Esperando resultado...</div>
+          </div>
+        )}
       </div>
       <Handle
         type="target"
@@ -467,7 +565,7 @@ export function OutputNode({ data }: NodeProps) {
 }
 
 // Nodo Prompt personalizado
-export function PromptNode({ data }: NodeProps) {
+export function PromptNode({ }: NodeProps) {
   return (
     <div className="min-w-[180px] p-4 bg-gradient-to-br from-purple-50 to-violet-100 border-2 border-purple-400 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-200">
       <div className="text-center mb-3">
@@ -496,7 +594,7 @@ export function PromptNode({ data }: NodeProps) {
 }
 
 // Nodo Function personalizado
-export function FunctionNode({ data }: NodeProps) {
+export function FunctionNode({ }: NodeProps) {
   return (
     <BaseCard
       bgGradient="bg-gradient-to-br from-red-50 to-pink-100"
@@ -522,11 +620,11 @@ export function FunctionNode({ data }: NodeProps) {
 
 // Nodo Tool para conectar herramientas a agentes
 export function ToolNode({ data }: NodeProps) {
-  const [config, setConfig] = React.useState({
+  const config = {
     toolName: data?.toolName || "custom_tool",
     description: data?.description || "Una herramienta personalizada",
     parameters: data?.parameters || {},
-  });
+  };
 
   return (
     <BaseCard
@@ -543,10 +641,10 @@ export function ToolNode({ data }: NodeProps) {
         <div className="text-orange-800 font-bold text-sm">Tool</div>
       </div>
       <div className="text-orange-600 text-xs text-center">
-        {config.toolName}
+        {String(config.toolName)}
       </div>
       <div className="text-orange-500 text-[10px] text-center mt-1">
-        {config.description}
+        {String(config.description)}
       </div>
     </BaseCard>
   );

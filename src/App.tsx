@@ -152,7 +152,13 @@ const initialEdges: Edge[] = [
   },
 ];
 
-function FlowCanvas() {
+interface FlowCanvasProps {
+  onSave?: (flowData: any) => void;
+  onExecute?: (flowData: any) => Promise<any>;
+  readonly?: boolean;
+}
+
+function FlowCanvas({ onSave: onSaveCallback, onExecute: onExecuteCallback, readonly }: FlowCanvasProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -387,6 +393,15 @@ function FlowCanvas() {
 
       // Success toast
       toast.success('¡Flujo ejecutado exitosamente!', { id: 'flow-execution' });
+      
+      // Call external callback if provided
+      if (onExecuteCallback) {
+        try {
+          await onExecuteCallback({ nodes, edges });
+        } catch (callbackError) {
+          console.warn('External onExecute callback failed:', callbackError);
+        }
+      }
 
     } catch (error) {
       console.error("💥 Error ejecutando flujo:", error);
@@ -401,7 +416,7 @@ function FlowCanvas() {
     } finally {
       setIsExecuting(false);
     }
-  }, [nodes, edges, executionEngine, isExecuting, setNodes]);
+  }, [nodes, edges, executionEngine, isExecuting, setNodes, onExecuteCallback]);
 
   const onDragOver = useCallback((event: DragEvent) => {
     event.preventDefault();
@@ -424,8 +439,14 @@ function FlowCanvas() {
     localStorage.setItem('ai-flow-canvas-state', JSON.stringify(flow));
     setLastSavedState(JSON.stringify(flow));
     setHasUnsavedChanges(false);
+    
+    // Call external callback if provided
+    if (onSaveCallback) {
+      onSaveCallback(flow);
+    }
+    
     toast.success('Flujo guardado exitosamente! 💾');
-  }, [toObject]);
+  }, [toObject, onSaveCallback]);
 
   // Detectar cambios en el flujo (solo después de cargar)
   useEffect(() => {
@@ -731,10 +752,16 @@ function FlowCanvas() {
   );
 }
 
-function App() {
+interface AppProps {
+  onSave?: (flowData: any) => void;
+  onExecute?: (flowData: any) => Promise<any>;
+  readonly?: boolean;
+}
+
+function App({ onSave, onExecute, readonly }: AppProps) {
   return (
     <ReactFlowProvider>
-      <FlowCanvas />
+      <FlowCanvas onSave={onSave} onExecute={onExecute} readonly={readonly} />
     </ReactFlowProvider>
   );
 }

@@ -9,10 +9,12 @@ import {
   FiTool,
   FiMaximize2,
   FiMinimize2,
+  FiCheck,
 } from "react-icons/fi";
 import { HiOutlineSparkles } from "react-icons/hi2";
 import { TbRobot } from "react-icons/tb";
 import { ModelService, type ModelInfo } from './services/modelService';
+import toast from 'react-hot-toast';
 
 interface BaseCardProps {
   children: React.ReactNode;
@@ -495,6 +497,7 @@ export function AgentNode({ data, id }: NodeProps) {
 export function OutputNode({ data }: NodeProps) {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [result, setResult] = React.useState(data?.result || null);
+  const [copied, setCopied] = React.useState(false);
 
   // Update result when data changes
   React.useEffect(() => {
@@ -504,6 +507,26 @@ export function OutputNode({ data }: NodeProps) {
   }, [data?.result]);
 
   const hasResult = result !== null && result !== undefined;
+
+  const handleCopy = async () => {
+    if (!result) return;
+    
+    try {
+      const textToCopy = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
+      await navigator.clipboard.writeText(textToCopy);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      
+      // Show success toast
+      toast.success('¡Resultado copiado al portapapeles! 📋', {
+        duration: 2000,
+        icon: '📋',
+      });
+    } catch (error) {
+      console.error('Error copying to clipboard:', error);
+      toast.error('Error al copiar al portapapeles');
+    }
+  };
 
   return (
     <>
@@ -515,17 +538,30 @@ export function OutputNode({ data }: NodeProps) {
             <span className="text-green-800 text-xs font-medium">Resultado</span>
           </div>
           {hasResult && (
-            <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="w-6 h-6 bg-white rounded-lg shadow-sm border border-gray-200 flex items-center justify-center hover:bg-green-50 transition-colors"
-              title={isExpanded ? "Contraer" : "Expandir"}
-            >
-              {isExpanded ? (
-                <FiMinimize2 size={12} className="text-green-600" />
-              ) : (
-                <FiMaximize2 size={12} className="text-green-600" />
-              )}
-            </button>
+            <div className="flex gap-1">
+              <button
+                onClick={handleCopy}
+                className="w-6 h-6 bg-white rounded-lg shadow-sm border border-gray-200 flex items-center justify-center hover:bg-green-50 transition-colors"
+                title={copied ? "¡Copiado!" : "Copiar al portapapeles"}
+              >
+                {copied ? (
+                  <FiCheck size={12} className="text-green-600" />
+                ) : (
+                  <FiCopy size={12} className="text-green-600" />
+                )}
+              </button>
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="w-6 h-6 bg-white rounded-lg shadow-sm border border-gray-200 flex items-center justify-center hover:bg-green-50 transition-colors"
+                title={isExpanded ? "Contraer" : "Expandir"}
+              >
+                {isExpanded ? (
+                  <FiMinimize2 size={12} className="text-green-600" />
+                ) : (
+                  <FiMaximize2 size={12} className="text-green-600" />
+                )}
+              </button>
+            </div>
           )}
         </div>
 

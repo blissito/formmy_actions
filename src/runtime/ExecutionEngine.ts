@@ -95,7 +95,15 @@ export class ExecutionEngine {
 
         // Pass outputs to connected nodes
         inputs = { ...inputs, ...result.outputs };
+        
+        // Also pass node's own data for simple flow connections
+        if (node.type === 'input' && node.data?.text) {
+          inputs.prompt = node.data.text;
+          inputs.input = node.data.text;
+        }
+        
         console.log(`✅ Node ${node.id} completed in ${result.executionTime}ms`);
+        console.log(`📤 Available inputs for next nodes:`, inputs);
       }
 
       execution.status = execution.status === 'running' ? 'completed' : execution.status;
@@ -170,6 +178,17 @@ export class ExecutionEngine {
         if (availableInputs[input.name] !== undefined) {
           nodeInputs[input.name] = availableInputs[input.name];
         }
+      }
+    } else {
+      // For nodes without explicit input definitions (like our custom nodes),
+      // pass all available inputs based on node type
+      if (node.type === 'agent' || node.type === 'output') {
+        // Agent and Output nodes should receive all available inputs
+        Object.assign(nodeInputs, availableInputs);
+      } else if (node.type === 'input') {
+        // Input nodes provide their own text/data
+        nodeInputs.text = node.data?.text || "";
+        nodeInputs.prompt = node.data?.text || "";
       }
     }
     

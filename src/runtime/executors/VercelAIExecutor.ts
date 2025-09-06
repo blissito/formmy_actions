@@ -19,7 +19,9 @@ export class VercelAIExecutor extends ComponentExecutor {
            context.componentName === 'agent' ||
            context.componentName === 'AgentNode' ||
            context.componentName === 'ChatOpenAI' ||
-           context.componentName === 'GPT4';
+           context.componentName === 'GPT4' ||
+           context.componentName === 'input' ||
+           context.componentName === 'output';
   }
 
   async execute(context: ExecutionContext): Promise<ExecutionResult> {
@@ -29,7 +31,14 @@ export class VercelAIExecutor extends ComponentExecutor {
     try {
       logs.push(`Executing Vercel AI component: ${context.componentName}`);
       
-      // Route to real Vercel AI execution
+      // Handle simple input/output nodes
+      if (context.componentName === 'input') {
+        return this.executeInputNode(context, logs);
+      } else if (context.componentName === 'output') {
+        return this.executeOutputNode(context, logs);
+      }
+      
+      // Route to real Vercel AI execution for agent nodes
       return await this.executeRealVercelAI(context, logs);
       
     } catch (error) {
@@ -256,6 +265,47 @@ export class VercelAIExecutor extends ComponentExecutor {
         total: usage?.totalTokens || 0
       },
       finishReason: 'stop'
+    };
+  }
+
+  private executeInputNode(context: ExecutionContext, logs: string[]): ExecutionResult {
+    logs.push('📝 Processing input node...');
+    
+    // Get text from the node's inputs
+    const text = context.inputs.text || context.inputs.prompt || context.parameters.text || '';
+    
+    logs.push(`📤 Input text: "${text}"`);
+    
+    return {
+      nodeId: context.nodeId,
+      outputs: {
+        prompt: text,
+        input: text,
+        text: text
+      },
+      status: 'success',
+      executionTime: 0,
+      logs
+    };
+  }
+
+  private executeOutputNode(context: ExecutionContext, logs: string[]): ExecutionResult {
+    logs.push('📥 Processing output node...');
+    
+    // Collect all available inputs as the result
+    const result = context.inputs.response || context.inputs.output || context.inputs.result || context.inputs;
+    
+    logs.push(`📊 Received result: ${typeof result === 'string' ? result.substring(0, 100) + '...' : JSON.stringify(result).substring(0, 100) + '...'}`);
+    
+    return {
+      nodeId: context.nodeId,
+      outputs: {
+        result: result,
+        display: result
+      },
+      status: 'success',
+      executionTime: 0,
+      logs
     };
   }
 }

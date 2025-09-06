@@ -1,300 +1,270 @@
-# 🚀 AI Flow Canvas - Generador Auto-mejorable
+# 🚀 Formmy Actions - Agentic flows made simple
 
-Un generador **meta** que crea componentes React Flow usando su propia tecnología. Se auto-construye, auto-valida y auto-mejora.
+**Embeddable React Flow component for building visual AI agent workflows**
 
-![AI Flow Canvas](https://img.shields.io/badge/Status-✅%20Funcionando-success)
-![Meta Level](https://img.shields.io/badge/Meta%20Level-🤖%20Auto--mejorable-purple)
-![Framework](https://img.shields.io/badge/Framework-React%20Flow-blue)
+[![React](https://img.shields.io/badge/React-18+-61dafb?style=flat&logo=react)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178c6?style=flat&logo=typescript)](https://www.typescriptlang.org/)
+[![React Flow](https://img.shields.io/badge/React%20Flow-12+-ff0072?style=flat&logo=react)](https://reactflow.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.0-06b6d4?style=flat&logo=tailwindcss)](https://tailwindcss.com/)
 
-## ✨ Características Principales
+## 🎯 What is Formmy Actions?
 
-- **🔄 Auto-generación**: El generador se construye a sí mismo desde YAML
-- **🧠 Validación Inteligente**: Loop automático de mejora con hasta 3 iteraciones
-- **⚡ Ejecución Multi-runtime**: Vercel AI SDK + LangChain.js + TypeScript
-- **🎨 UI Dinámica**: Componentes aparecen automáticamente en sidebar
-- **📝 Definición Simple**: YAMLs fáciles → Componentes React complejos
+**Formmy Actions** is an **embeddable React component** that provides visual workflow creation capabilities for AI agent orchestration. Originally developed as a core feature for [formmy.app](https://formmy.app), it's designed to be **integrated into any React application** as a standalone library.
 
-## 🎯 Demo Rápido
+### 🏗️ Built as a Distributed Feature
+
+This isn't just another workflow tool - it's a **microservice-ready component library** designed to:
+
+- ✅ **Embed seamlessly** into existing React applications
+- ✅ **Communicate via API calls** for distributed architectures  
+- ✅ **Scale independently** as a separate service
+- ✅ **Integrate with formmy.app** and other platforms
+
+## 🌟 Key Features
+
+### 🎨 Visual Workflow Builder
+- **Drag & drop interface** powered by React Flow
+- **Real-time visual connections** between AI agents
+- **Dynamic node types** with smart color coding by provider
+- **Persistent state management** with auto-save functionality
+
+### 🤖 Multi-Provider AI Support
+- **OpenAI Integration** (GPT-3.5, GPT-4, GPT-4o series)
+- **Anthropic Support** (Claude 3 Haiku, Sonnet, Opus, 3.5 Sonnet)
+- **Dynamic model loading** from provider APIs
+- **Provider-specific theming** (Green for OpenAI, Amber for Anthropic)
+
+### ⚡ Developer Experience
+- **TypeScript-first** with full type safety
+- **Hot reload** with instant feedback
+- **Component isolation** for easy embedding
+- **Comprehensive save system** with Cmd/Ctrl+S shortcuts
+
+### 🔧 Advanced Functionality
+- **Execution Engine** with support for distributed processing
+- **Global configuration management** for API keys and settings
+- **Toast notifications** for user feedback
+- **Keyboard shortcuts** for power users
+- **Responsive design** with fixed sidebars
+
+## 🚀 Quick Start
+
+### Installation
 
 ```bash
-# 1. Clonar y setup
-git clone [repo-url]
-cd ai-flow-canvas
+npm create vite@latest my-ai-workflows -- --template react-ts
+cd my-ai-workflows
 npm install
 
-# 2. Generar componentes con validación inteligente
-npm run meta-gen intelligent
-
-# 3. Ver el canvas
-npm run dev
-# → http://localhost:5174
+# Install dependencies
+npm install @xyflow/react react-hot-toast @tailwindcss/forms
 ```
 
-## 🔧 Sistema de Generación
+### Basic Usage
 
-### YAML → Componente React
-```yaml
-# components/mi-componente.yaml
-name: MiComponente
-framework: custom
-category: processor
-description: Mi componente personalizado
+```tsx
+import { AIFlowCanvas } from 'formmy-actions';
 
-inputs:
-  - name: data
-    type: any
-    required: true
-
-outputs:
-  - name: result
-    type: any
-    required: true
-
-ui:
-  icon: "🔧"
-  color: "#6366f1"
+function App() {
+  return (
+    <div className="w-full h-screen">
+      <AIFlowCanvas 
+        apiKeys={{
+          openai: 'your-openai-key',
+          anthropic: 'your-anthropic-key'
+        }}
+        onSave={(flowData) => {
+          // Handle flow persistence
+          console.log('Saving flow:', flowData);
+        }}
+        onExecute={(flowData) => {
+          // Handle flow execution
+          console.log('Executing flow:', flowData);
+        }}
+      />
+    </div>
+  );
+}
 ```
+
+## 🏠 Origin Story - Born at formmy.app
+
+**Formmy Actions** was originally developed as a core feature for [formmy.app](https://formmy.app), a platform for creating intelligent forms and workflows. As the AI workflow capabilities grew in complexity and utility, we realized this could be a **standalone feature that benefits the entire React ecosystem**.
+
+### Why Extract from formmy.app?
+
+1. **🔄 Reusability**: Other applications need visual AI workflow capabilities
+2. **🏗️ Modularity**: Better architecture through component separation  
+3. **🌐 Community**: Open source approach benefits everyone
+4. **📈 Scalability**: Independent scaling and deployment options
+
+### Connection to formmy.app
+
+While **Formmy Actions** can be used standalone, it's designed to integrate seamlessly back into formmy.app and similar platforms:
+
+```tsx
+// In formmy.app
+import { FormBuilder } from '@formmy/core';
+import { AIFlowCanvas } from 'formmy-actions';
+
+function FormWithAI() {
+  return (
+    <div className="flex">
+      <FormBuilder />
+      <AIFlowCanvas 
+        formContext={true}
+        onFormAction={(action) => {
+          // Handle AI actions on form data
+        }}
+      />
+    </div>
+  );
+}
+```
+
+## 🎨 Component Architecture
+
+### Distributed Design
+
+```mermaid
+graph TB
+    A[Host App] --> B[Formmy Actions]
+    B --> C[React Flow Canvas]
+    B --> D[Execution Engine]
+    B --> E[Node Components]
+    
+    D --> F[OpenAI Executor]
+    D --> G[Anthropic Executor] 
+    D --> H[Custom Executor]
+    
+    F --> I[OpenAI API]
+    G --> J[Anthropic API]
+    H --> K[Custom Services]
+```
+
+### Self-Contained Components
+- **InputNode**: Text input with auto-expansion
+- **AgentNode**: AI model configuration with provider theming
+- **OutputNode**: Results display with formatting
+- **PromptNode**: Template management with variables
+- **FunctionNode**: Custom logic execution
+- **ToolNode**: External tool integration
+
+## 📖 Documentation
+
+### Core Concepts
+
+1. **Nodes**: Individual components in the workflow
+2. **Edges**: Connections defining data flow
+3. **Executors**: Runtime engines for different AI providers
+4. **Global Config**: Shared settings across all workflows
+
+### API Reference
+
+```tsx
+interface AIFlowCanvasProps {
+  apiKeys?: {
+    openai?: string;
+    anthropic?: string;
+  };
+  initialFlow?: FlowData;
+  onSave?: (flowData: FlowData) => void;
+  onExecute?: (flowData: FlowData) => Promise<any>;
+  theme?: 'light' | 'dark' | 'auto';
+  readonly?: boolean;
+}
+```
+
+### Embedding Examples
+
+#### Minimal Embedding
+```tsx
+import { AIFlowCanvas } from 'formmy-actions';
+
+<AIFlowCanvas />
+```
+
+#### Full Configuration
+```tsx
+<AIFlowCanvas 
+  apiKeys={{
+    openai: process.env.OPENAI_API_KEY,
+    anthropic: process.env.ANTHROPIC_API_KEY
+  }}
+  theme="dark"
+  onSave={async (flow) => {
+    await saveToDatabase(flow);
+  }}
+  onExecute={async (flow) => {
+    return await executeWorkflow(flow);
+  }}
+  readonly={false}
+/>
+```
+
+## 🛠️ Development
+
+### Local Development
 
 ```bash
-npm run meta-gen intelligent
-# → Genera componente React con validación automática
-# → Aparece en sidebar listo para drag & drop
-```
+# Clone the repository
+git clone https://github.com/blissito/formmy_actions.git
+cd formmy_actions
 
-## 🎨 Canvas Interactivo
-
-<div align="center">
-  <h3>🖱️ Drag & Drop</h3>
-  <p>Arrastra componentes desde la paleta al canvas</p>
-  
-  <h3>🔗 Conexiones Visuales</h3>
-  <p>Conecta inputs/outputs arrastrando entre nodos</p>
-  
-  <h3>▶️ Ejecución Completa</h3>
-  <p>Ejecuta workflows completos con un click</p>
-</div>
-
-## 🧠 Validación Inteligente
-
-El sistema valida automáticamente cada componente generado:
-
-- ✅ **YAML Structure**: Campos requeridos y sintaxis
-- ✅ **TypeScript**: Compilación sin errores
-- ✅ **React**: Estructura JSX válida
-- ✅ **Handles**: Inputs/outputs correctos
-- ✅ **Styling**: CSS y Tailwind válidos
-
-Si encuentra errores, **regenera automáticamente** hasta 3 veces con mejoras.
-
-## 🚀 Comandos Disponibles
-
-### Generación Básica
-```bash
-npm run meta-gen bootstrap    # El generador se construye a sí mismo
-npm run meta-gen generate     # Genera todos los componentes
-npm run meta-gen validate     # Valida componentes existentes
-```
-
-### Generación Inteligente
-```bash
-npm run meta-gen intelligent  # Con validación y regeneración automática
-npm run meta-gen improve      # Mejora el generador usando sí mismo
-```
-
-### Workflows Completos  
-```bash
-npm run meta-gen all          # Workflow básico completo
-npm run meta-gen full         # Workflow inteligente completo
-```
-
-## 🔄 El Ciclo Meta
-
-1. **📝 YAML Definition**: Describes el componente en YAML simple
-2. **⚡ Code Generation**: Genera código React TypeScript
-3. **🔍 Intelligent Validation**: Valida estructura, compilación, React, handles
-4. **🔄 Auto-improvement**: Si hay errores, mejora y regenera automáticamente  
-5. **🎨 UI Integration**: Aparece automáticamente en sidebar del canvas
-6. **▶️ Execution**: Listo para ejecutar en workflows reales
-
-## 📦 Frameworks Soportados
-
-### LangChain.js
-- `ChatOpenAI` - Modelos de chat de OpenAI
-- `PromptTemplate` - Templates con variables  
-- `VectorStore` - Base de datos vectorial
-- `RetrievalQA` - Q&A con retrieval
-
-### LlamaIndex  
-- `VectorStoreIndex` - Índices vectoriales
-- `QueryEngine` - Motor de consultas
-- `SimpleDirectoryReader` - Lector de documentos
-
-### Custom/TypeScript
-- `RAGPipeline` - Pipeline RAG completo
-- `DataProcessor` - Procesamiento de datos
-- `APICall` - Llamadas a APIs
-- Cualquier lógica custom
-
-### Meta
-- `BootstrapGenerator` - ¡El generador mismo!
-
-## 💡 Casos de Uso
-
-### 🤖 Pipelines de IA
-```bash
-# Crea workflows LLM completos
-Entrada → PromptTemplate → ChatOpenAI → Resultado
-```
-
-### 📚 RAG Systems  
-```bash
-# Sistemas de retrieval augmented generation
-Documentos → VectorStore → RAGPipeline → Respuesta
-```
-
-### 🔧 Lógica Custom
-```bash
-# Cualquier procesamiento personalizado
-Input → DataProcessor → Function → Output
-```
-
-### 🎯 Auto-mejora
-```bash
-# El generador mejora sus propios componentes
-YAML → Bootstrap → Validation → Improvement → Better Component
-```
-
-## 🛠️ Arquitectura
-
-```
-ai-flow-canvas/
-├── components/                    # 📝 Definiciones YAML
-│   ├── langchain-chatgpt.yaml   # LangChain components
-│   ├── llamaindex-vectorstore.yaml
-│   ├── custom-rag-pipeline.yaml  # Custom components  
-│   └── meta-generator.yaml       # 🤖 Self-definition
-├── src/
-│   ├── generator/                 # ⚡ Code generation
-│   │   ├── BootstrapGenerator.ts
-│   │   ├── IntelligentGenerator.ts
-│   │   └── SelfImprovementWorkflow.ts
-│   ├── validator/                 # 🔍 Validation
-│   │   └── ComponentValidator.ts
-│   ├── runtime/                   # ▶️ Execution
-│   │   ├── ExecutionEngine.ts
-│   │   └── executors/
-│   │       ├── VercelAIExecutor.ts
-│   │       ├── LangChainExecutor.ts
-│   │       └── TypeScriptExecutor.ts
-│   └── components/                # 🎨 UI
-│       ├── GeneratedComponentsSidebar.tsx
-│       └── generated/             # Generated components appear here
-└── CLAUDE.md                     # 📚 Documentación completa
-```
-
-## 🚦 Getting Started
-
-### Prerequisitos
-- Node.js 18+
-- npm o yarn
-
-### Instalación
-```bash
-# 1. Clonar repositorio
-git clone [repo-url]
-cd ai-flow-canvas
-
-# 2. Instalar dependencias
+# Install dependencies
 npm install
 
-# 3. Generar componentes iniciales
-npm run meta-gen intelligent
-
-# 4. Iniciar desarrollo
+# Start development server
 npm run dev
+
+# Open http://localhost:5173
 ```
 
-### Crear Tu Primer Componente
+### Building for Production
+
 ```bash
-# 1. Crear YAML
-cat > components/mi-primer-componente.yaml << EOF
-name: MiPrimerComponente
-framework: custom  
-category: processor
-description: Mi primer componente generado
+# Build the library
+npm run build
 
-inputs:
-  - name: input_text
-    type: string
-    required: true
-
-outputs:
-  - name: processed_text
-    type: string
-    required: true
-
-parameters:
-  prefix:
-    type: string
-    default: "Procesado: "
-
-ui:
-  icon: "🎉"
-  color: "#10b981"
-  position: [200, 100]
-EOF
-
-# 2. Generar con validación
-npm run meta-gen intelligent
-
-# 3. ¡Ya está disponible en el canvas!
+# Build for embedding
+npm run build:embed
 ```
 
-## 🤝 Contribuir
+## 🤝 Contributing
 
-### Agregar Nuevo Framework
-1. Crear ejecutor en `src/runtime/executors/NuevoFrameworkExecutor.ts`
-2. Registrar en `ExecutionEngine` 
-3. Crear componentes YAML en `components/`
-4. Ejecutar `npm run meta-gen intelligent`
+We welcome contributions! This project originated from formmy.app but is now a community effort.
 
-### Extender Validación
-1. Modificar `ComponentValidator.ts`
-2. Agregar checks en `validateComponent()`
-3. El sistema aplicará mejoras automáticamente
+### Development Guidelines
 
-### Mejorar el Generador
-1. Editar `BootstrapGenerator.ts`
-2. Actualizar `meta-generator.yaml`  
-3. Ejecutar `npm run meta-gen improve`
-4. ¡El generador se mejora a sí mismo!
+1. **Component Isolation**: Each component should work independently
+2. **API-First**: Design for distributed architectures
+3. **TypeScript**: Maintain full type safety
+4. **Testing**: Include tests for new features
+5. **Documentation**: Update README for new capabilities
 
-## 📈 Roadmap
+### Submit Issues
 
-- [ ] 🎨 Editor visual de YAMLs
-- [ ] 🌐 Marketplace de componentes  
-- [ ] 🚀 Ejecución distribuida
-- [ ] 🤖 IA generativa para crear YAMLs
-- [ ] 📤 Export/import workflows
-- [ ] 🔧 Más frameworks (Haystack, Semantic Kernel)
+Found a bug or have a feature request? [Open an issue](https://github.com/blissito/formmy_actions/issues)
 
-## 📄 Licencia
+## 📄 License
 
-MIT License - ve [LICENSE](LICENSE) para detalles.
+MIT License - see [LICENSE](LICENSE) for details
+
+## 🔗 Related Projects
+
+- [formmy.app](https://formmy.app) - The original platform where this was born
+- [React Flow](https://reactflow.dev/) - The underlying flow library
+- [@ai-sdk](https://sdk.vercel.ai/) - AI SDK integration
+
+## 🙏 Acknowledgments
+
+- **formmy.app team** - For the original vision and development
+- **React Flow team** - For the amazing foundation
+- **Vercel AI SDK** - For AI integration capabilities
+- **Community contributors** - For making this better
 
 ---
 
-<div align="center">
-  <h3>🤖 Un sistema verdaderamente meta</h3>
-  <p><em>Una herramienta que se construye y mejora a sí misma usando su propia tecnología</em></p>
-  <p><strong>Como Rust compilándose con Rust, pero para componentes React Flow</strong> ✨</p>
-</div>
+**Made with ❤️ by the formmy.app team and community contributors**
 
-## 🔗 Enlaces
-
-- 📚 [Documentación Completa](CLAUDE.md)
-- 🎯 [Demo en Vivo](http://localhost:5174) (después de `npm run dev`)
-- 🐛 [Reportar Bug](issues/new)
-- 💡 [Solicitar Feature](issues/new)
-
-**¡Hecho con ❤️ y mucha meta-programación!**
+*Originally developed for formmy.app, now available as a standalone embeddable component for the React ecosystem.*

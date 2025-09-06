@@ -265,6 +265,6 @@ MIT License - see [LICENSE](LICENSE) for details
 
 ---
 
-**Made with ❤️ by the formmy.app team and community contributors**
+**🤖 Hecho con ❤️ por [Fixter.org](https://fixter.org) para [formmy.app](https://formmy.app)**
 
 *Originally developed for formmy.app, now available as a standalone embeddable component for the React ecosystem.*

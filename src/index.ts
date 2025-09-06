@@ -1,5 +1,6 @@
 // Main library exports
 export { default as AIFlowCanvas } from './AIFlowCanvas';
+export { default } from './AIFlowCanvas'; // Default export for convenience
 
 // Node components exports
 export * from './CustomNodes';

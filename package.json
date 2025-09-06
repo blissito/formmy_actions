@@ -1,7 +1,7 @@
 {
   "name": "formmy-actions",
   "private": false,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Visual AI workflow builder as an embeddable React component",
   "type": "module",
   "main": "./dist/formmy-actions.umd.js",

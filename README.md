@@ -27,7 +27,12 @@ npm install formmy-actions
 ## 📖 Quick Start
 
 ```tsx
+// Option 1: Named import (recommended)
 import { AIFlowCanvas } from 'formmy-actions';
+import 'formmy-actions/style.css'; // Required CSS
+
+// Option 2: Default import
+import AIFlowCanvas from 'formmy-actions';
 import 'formmy-actions/style.css'; // Required CSS
 
 export default function App() {

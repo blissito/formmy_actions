@@ -10,6 +10,8 @@ import {
   FiMaximize2,
   FiMinimize2,
   FiCheck,
+  FiChevronDown,
+  FiChevronUp,
 } from "react-icons/fi";
 import { HiOutlineSparkles } from "react-icons/hi2";
 import { TbRobot } from "react-icons/tb";
@@ -60,7 +62,16 @@ export function InputNode({ data, id }: NodeProps) {
   const [text, setText] = React.useState<string>(String(data?.text ?? ""));
   const [isFocused, setIsFocused] = React.useState(false);
   const [isExpanded, setIsExpanded] = React.useState(false);
+  const { updateNodeData } = useReactFlow();
   const { getNodes, setNodes } = useReactFlow();
+
+  // Sincronizar estado local cuando data cambie (al cargar flujo guardado)
+  React.useEffect(() => {
+    const savedText = String(data?.text ?? "");
+    if (savedText !== text) {
+      setText(savedText);
+    }
+  }, [data?.text, id, text]);
 
   const handleDuplicate = () => {
     const nodes = getNodes();
@@ -110,7 +121,12 @@ export function InputNode({ data, id }: NodeProps) {
         {/* Textarea */}
         <textarea
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => {
+            const newText = e.target.value;
+            setText(newText);
+            // Actualizar los datos del nodo para que se guarden
+            updateNodeData(id, { text: newText });
+          }}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           className="w-full p-2 border border-blue-200 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-transparent resize-none text-xs transition-all duration-200"
@@ -157,7 +173,7 @@ export function AgentNode({ data, id }: NodeProps) {
   const [isHovered, setIsHovered] = React.useState(false);
   const [availableModels, setAvailableModels] = React.useState<ModelInfo[]>([]);
   const [isLoadingModels, setIsLoadingModels] = React.useState(false);
-  const { getNodes, setNodes } = useReactFlow();
+  const { getNodes, setNodes, updateNodeData } = useReactFlow();
   
   // Execution state
   const executionStatus = data?.executionStatus || 'idle'; // idle, running, success, error
@@ -178,6 +194,18 @@ export function AgentNode({ data, id }: NodeProps) {
     stream: data?.stream ?? globalConfig.defaultStream ?? true,
     agentType: String(data?.agentType || "openai"), // openai, anthropic, llamaindex
   });
+
+  // Helper function to update config and save to node data
+  const updateConfig = React.useCallback((newConfig: typeof config) => {
+    setConfig(newConfig);
+    // Guardar la configuración en los datos del nodo para que persista
+    updateNodeData(id, {
+      model: newConfig.model,
+      temperature: newConfig.temperature,
+      stream: newConfig.stream,
+      agentType: newConfig.agentType
+    });
+  }, [id, updateNodeData]);
 
   // Cargar modelos disponibles cuando se abre la configuración
   React.useEffect(() => {
@@ -309,7 +337,8 @@ export function AgentNode({ data, id }: NodeProps) {
             <div className={`w-[30px] h-8 rounded-xl bg-gradient-to-br ${colors.iconBg} flex items-center justify-center text-white shadow-md relative`}>
               <TbRobot size={16} />
               {executionStatus === 'running' && (
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full animate-pulse" 
+                     style={{animationDuration: '2s'}}></div>
               )}
               {executionStatus === 'success' && (
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full"></div>
@@ -321,7 +350,7 @@ export function AgentNode({ data, id }: NodeProps) {
             <div className={`${colors.textColor} font-bold text-sm`}>
               Agente IA
               {executionStatus === 'running' && (
-                <span className="ml-1 text-blue-600 text-xs">(ejecutando...)</span>
+                <span className="ml-1 text-amber-600 text-xs animate-pulse" style={{animationDuration: '1.5s'}}>(pensando...)</span>
               )}
             </div>
           </div>
@@ -355,7 +384,7 @@ export function AgentNode({ data, id }: NodeProps) {
               <select
                 value={config.model}
                 onChange={(e) =>
-                  setConfig({ ...config, model: e.target.value })
+                  updateConfig({ ...config, model: e.target.value })
                 }
                 className="w-full text-xs p-1 rounded bg-white border border-amber-200"
                 disabled={isLoadingModels}
@@ -383,7 +412,7 @@ export function AgentNode({ data, id }: NodeProps) {
                 step="0.1"
                 value={config.temperature}
                 onChange={(e) =>
-                  setConfig({
+                  updateConfig({
                     ...config,
                     temperature: parseFloat(e.target.value),
                   })
@@ -399,7 +428,7 @@ export function AgentNode({ data, id }: NodeProps) {
                 type="checkbox"
                 checked={config.stream}
                 onChange={(e) =>
-                  setConfig({ ...config, stream: e.target.checked })
+                  updateConfig({ ...config, stream: e.target.checked })
                 }
                 className="rounded"
               />
@@ -415,7 +444,7 @@ export function AgentNode({ data, id }: NodeProps) {
               <select
                 value={config.agentType}
                 onChange={(e) =>
-                  setConfig({ ...config, agentType: e.target.value })
+                  updateConfig({ ...config, agentType: e.target.value })
                 }
                 className="w-full text-xs p-1 rounded bg-white border border-amber-200"
               >
@@ -504,7 +533,38 @@ export function OutputNode({ data }: NodeProps) {
     if (data?.result) {
       setResult(data.result);
     }
-  }, [data?.result]);
+  }, [data?.result, data?.executionStatus]);
+
+  // Get the result text to show in the main textarea
+  const getResultText = () => {
+    // If we have a result, show it
+    if (result) {
+      // If result is a string, return it directly
+      if (typeof result === 'string') {
+        return result;
+      }
+      
+      // If result is an object, try to get the response/text
+      if (typeof result === 'object') {
+        const resultText = result.response || result.text || result.output || result.message;
+        if (resultText && typeof resultText === 'string') {
+          return resultText;
+        }
+        
+        // If no specific text field, stringify the object (but nicely formatted)
+        return JSON.stringify(result, null, 2);
+      }
+    }
+    
+    // Show status-based message when no result
+    if (executionStatus === 'running') {
+      return "Generando respuesta...";
+    } else if (executionStatus === 'error') {
+      return "Error en la ejecución";
+    } else {
+      return "Tu mensaje aparecerá aquí...";
+    }
+  };
 
   const hasResult = result !== null && result !== undefined;
   const executionStatus = data?.executionStatus || 'idle';
@@ -555,7 +615,18 @@ export function OutputNode({ data }: NodeProps) {
     if (!result) return;
     
     try {
-      const textToCopy = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
+      // Handle different result formats: string directly, or object with response/text properties
+      let textToCopy = '';
+      if (typeof result === 'string') {
+        textToCopy = result;
+      } else if (result?.response) {
+        textToCopy = result.response;
+      } else if (result?.text) {
+        textToCopy = result.text;
+      } else {
+        textToCopy = JSON.stringify(result, null, 2);
+      }
+      
       await navigator.clipboard.writeText(textToCopy);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -573,100 +644,127 @@ export function OutputNode({ data }: NodeProps) {
 
   return (
     <>
-      <div className={`min-w-[200px] ${isExpanded ? 'min-h-[300px]' : 'min-h-[80px]'} ${getBackgroundColor()} border-2 ${getBorderColor()} rounded-2xl p-3 transition-all duration-200`}>
+      <div className={`min-w-[320px] max-w-[500px] ${getBackgroundColor()} border-2 ${getBorderColor()} rounded-xl shadow-lg transition-all duration-200`}>
         {/* Header */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            {executionStatus === 'error' ? (
-              <div className="text-red-600">❌</div>
-            ) : executionStatus === 'running' ? (
-              <div className="text-blue-600 animate-spin">⏳</div>
-            ) : (
-              <HiOutlineSparkles className="text-green-600" size={16} />
-            )}
-            <span className={`text-xs font-medium ${
-              executionStatus === 'error' ? 'text-red-800' : 
-              executionStatus === 'running' ? 'text-blue-800' : 
-              'text-green-800'
-            }`}>
-              {executionStatus === 'error' ? 'Error' : 
-               executionStatus === 'running' ? 'Ejecutando...' : 
-               'Resultado'}
-            </span>
+        <div className="flex items-center justify-between p-4 pb-3 border-b border-gray-200">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-md">
+              {executionStatus === 'error' ? (
+                <span className="text-white text-sm">❌</span>
+              ) : executionStatus === 'running' ? (
+                <span className="text-white text-sm animate-spin">⏳</span>
+              ) : (
+                <HiOutlineSparkles className="text-white" size={18} />
+              )}
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-gray-800">Resultado</h3>
+              <div className={`text-xs ${
+                executionStatus === 'error' ? 'text-red-600' : 
+                executionStatus === 'running' ? 'text-blue-600' : 
+                'text-green-600'
+              }`}>
+                {executionStatus === 'error' ? 'Error en la ejecución' : 
+                 executionStatus === 'running' ? 'Procesando...' : 
+                 'Completado'}
+              </div>
+            </div>
           </div>
           {hasResult && (
-            <div className="flex gap-1">
+            <div className="flex gap-2">
               <button
                 onClick={handleCopy}
-                className="w-6 h-6 bg-white rounded-lg shadow-sm border border-gray-200 flex items-center justify-center hover:bg-green-50 transition-colors"
-                title={copied ? "¡Copiado!" : "Copiar al portapapeles"}
+                className="w-8 h-8 bg-white rounded-lg shadow-sm border border-gray-200 flex items-center justify-center hover:bg-green-50 transition-colors"
+                title={copied ? "¡Copiado!" : "Copiar resultado"}
               >
                 {copied ? (
-                  <FiCheck size={12} className="text-green-600" />
+                  <FiCheck size={14} className="text-green-600" />
                 ) : (
-                  <FiCopy size={12} className="text-green-600" />
+                  <FiCopy size={14} className="text-gray-600" />
                 )}
               </button>
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="w-6 h-6 bg-white rounded-lg shadow-sm border border-gray-200 flex items-center justify-center hover:bg-green-50 transition-colors"
-                title={isExpanded ? "Contraer" : "Expandir"}
+                className="w-8 h-8 bg-white rounded-lg shadow-sm border border-gray-200 flex items-center justify-center hover:bg-blue-50 transition-colors"
+                title={isExpanded ? "Contraer" : "Ver detalles"}
               >
                 {isExpanded ? (
-                  <FiMinimize2 size={12} className="text-green-600" />
+                  <FiChevronUp size={14} className="text-gray-600" />
                 ) : (
-                  <FiMaximize2 size={12} className="text-green-600" />
+                  <FiChevronDown size={14} className="text-gray-600" />
                 )}
               </button>
             </div>
           )}
         </div>
 
-        {/* Result Display */}
-        {hasResult ? (
-          <div className={`bg-white rounded-lg p-2 border ${
-            executionStatus === 'error' ? 'border-red-200' : 'border-green-200'
-          } ${isExpanded ? 'max-h-[250px]' : 'max-h-[40px]'} overflow-y-auto transition-all duration-200`}>
-            <div className={`text-xs ${
-              executionStatus === 'error' ? 'text-red-700' : 'text-gray-700'
+        {/* Main Content */}
+        <div className="p-4">
+          {/* Result Display */}
+          <div className={`bg-white rounded-lg border border-gray-200 ${
+            hasResult ? 'min-h-[120px]' : 'min-h-[80px]'
+          } p-4 mb-3 shadow-sm`}>
+            <div className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-500"></span>
+              Respuesta
+            </div>
+            <div className={`text-sm text-gray-800 leading-relaxed ${
+              !hasResult ? 'text-gray-500 italic' : ''
             }`}>
-              {isExpanded ? (
-                <pre className="whitespace-pre-wrap font-mono text-[10px]">
-                  {typeof result === 'string' ? result : JSON.stringify(result, null, 2)}
-                </pre>
+              {hasResult ? (
+                <div className="whitespace-pre-wrap">
+                  {getResultText()}
+                </div>
               ) : (
-                <div className="truncate">
-                  {typeof result === 'string' 
-                    ? result.substring(0, 50) + (result.length > 50 ? '...' : '')
-                    : JSON.stringify(result).substring(0, 50) + '...'
-                  }
+                <div className="flex items-center justify-center py-8 text-gray-400">
+                  {executionStatus === 'running' ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                      <span>Generando respuesta...</span>
+                    </div>
+                  ) : executionStatus === 'error' ? (
+                    <div className="flex items-center gap-2 text-red-500">
+                      <span>❌</span>
+                      <span>Error en la ejecución</span>
+                    </div>
+                  ) : (
+                    <span>Ejecuta el flujo para ver la respuesta</span>
+                  )}
                 </div>
               )}
             </div>
-            
-            {renderLogs()}
           </div>
-        ) : (
-          <div className="text-center">
-            <div className={`text-xs ${
-              executionStatus === 'running' ? 'text-blue-600' :
-              executionStatus === 'error' ? 'text-red-600' : 
-              'text-gray-500'
-            }`}>
-              {executionStatus === 'running' ? 'Ejecutando...' :
-               executionStatus === 'error' ? 'Error en la ejecución' :
-               'Esperando resultado...'}
+
+          {/* Expandable Details */}
+          {isExpanded && hasResult && (
+            <div className="space-y-3">
+              {/* Metadata */}
+              <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                <div className="text-xs font-medium text-gray-600 mb-2">Información de Ejecución</div>
+                <div className="text-xs text-gray-500 space-y-1">
+                  <div>Estado: <span className="font-mono">{executionStatus}</span></div>
+                  <div>Timestamp: <span className="font-mono">{result?.execution_info?.timestamp || new Date().toISOString()}</span></div>
+                  {result?.tokens && (
+                    <div>Tokens: <span className="font-mono">{result.tokens.total || 0}</span></div>
+                  )}
+                </div>
+              </div>
+
+              {/* Logs */}
+              {renderLogs()}
             </div>
-          </div>
-        )}
+          )}
+        </div>
+        
+        {/* Handle inside the main div */}
+        <Handle
+          type="target"
+          position={Position.Left}
+          id="input"
+          className="w-3 h-3 bg-green-500 border-2 border-white !important"
+          style={{ backgroundColor: "#10b981" }}
+        />
       </div>
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="input"
-        className="w-3 h-3 bg-green-500 border-2 border-white !important"
-        style={{ backgroundColor: "#10b981" }}
-      />
     </>
   );
 }

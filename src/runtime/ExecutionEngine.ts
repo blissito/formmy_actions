@@ -126,9 +126,10 @@ export class ExecutionEngine {
   ): Promise<ExecutionResult> {
     const startTime = Date.now();
     
+    const gatheredInputs = this.gatherNodeInputs(node, availableInputs);
     const context: ExecutionContext = {
       nodeId: node.id,
-      inputs: this.gatherNodeInputs(node, availableInputs),
+      inputs: gatheredInputs,
       parameters: node.data?.parameters || {},
       framework: String(node.data?.framework || 'custom'),
       componentName: String(node.data?.component || node.type || 'unknown')
@@ -260,24 +261,6 @@ export class ExecutionEngine {
       console.log('✅ Registered VercelAI executor');
     }).catch(error => {
       console.warn('⚠️ Failed to register VercelAI executor:', error);
-    });
-
-    // Import and register LangChain executor
-    import('./executors/LangChainExecutor').then(({ LangChainExecutor }) => {
-      const langchainExecutor = new LangChainExecutor();
-      this.registerExecutor(langchainExecutor);
-      console.log('✅ Registered LangChain executor');
-    }).catch(error => {
-      console.warn('⚠️ Failed to register LangChain executor:', error);
-    });
-
-    // Import and register TypeScript executor
-    import('./executors/TypeScriptExecutor').then(({ TypeScriptExecutor }) => {
-      const typescriptExecutor = new TypeScriptExecutor();
-      this.registerExecutor(typescriptExecutor);
-      console.log('✅ Registered TypeScript executor');
-    }).catch(error => {
-      console.warn('⚠️ Failed to register TypeScript executor:', error);
     });
   }
 }

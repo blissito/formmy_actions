@@ -15,8 +15,7 @@ export class TypeScriptExecutor extends ComponentExecutor {
     ];
     
     return typescriptComponents.includes(context.componentName) ||
-           context.framework === 'typescript' ||
-           context.framework === 'custom';
+           context.framework === 'typescript';
   }
 
   async execute(context: ExecutionContext): Promise<ExecutionResult> {

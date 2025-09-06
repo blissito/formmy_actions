@@ -425,7 +425,6 @@ function FlowCanvas() {
     setLastSavedState(JSON.stringify(flow));
     setHasUnsavedChanges(false);
     toast.success('Flujo guardado exitosamente! 💾');
-    console.log('Flujo guardado exitosamente', flow);
   }, [toObject]);
 
   // Detectar cambios en el flujo (solo después de cargar)
@@ -526,7 +525,7 @@ function FlowCanvas() {
   return (
     <div className="flex w-screen h-screen bg-gray-50">
       {/* Sidebar */}
-      <div className="w-72 min-w-72 max-w-72 flex-shrink-0 bg-white border-r border-gray-200 shadow-lg z-20 overflow-y-auto overflow-x-hidden max-h-screen p-4">
+      <div className="w-72 min-w-72 max-w-72 flex-shrink-0 bg-white border-r border-gray-200 shadow-lg z-20 overflow-y-auto overflow-x-hidden max-h-screen p-4" style={{maxWidth: '288px'}}>
         <div className="flex items-center justify-between px-2 mb-4">
           <h3 className="text-lg font-bold text-gray-800">
             Paleta de Nodos

@@ -1,0 +1,502 @@
+/* 
+ * Formmy Actions - Aggressive Style Isolation
+ * Prevents ALL external CSS from interfering with component styles
+ */
+
+.formmy-actions-isolated {
+  /* Complete isolation boundary */
+  all: initial !important;
+  box-sizing: border-box !important;
+  
+  /* Re-establish base styles */
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  color: #374151 !important;
+  background: transparent !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  text-align: initial !important;
+  text-decoration: none !important;
+  text-transform: none !important;
+  text-indent: 0 !important;
+  letter-spacing: normal !important;
+  word-spacing: normal !important;
+  text-shadow: none !important;
+  list-style: none !important;
+  vertical-align: baseline !important;
+  position: static !important;
+  
+  /* Ensure child elements get isolated, but preserve React Flow and Tailwind classes from formmy-actions */
+  *:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]):not([class*="bg-"]):not([class*="text-"]):not([class*="flex"]):not([class*="rounded"]):not([class*="shadow"]):not([class*="border"]):not([class*="p-"]):not([class*="m-"]):not([class*="w-"]):not([class*="h-"]):not([class*="gap-"]):not([class*="hover:"]):not([class*="transition"]):not([class*="transform"]):not([class*="scale"]):not([class*="cursor-"]):not([class*="font-"]):not([class*="items-"]):not([class*="justify-"]):not([class*="space-"]):not([class*="min-"]):not([class*="max-"]):not([class*="overflow-"]):not([class*="z-"]):not([class*="relative"]):not([class*="absolute"]):not([class*="fixed"]):not([class*="block"]):not([class*="inline"]):not([class*="hidden"]):not([class*="opacity-"]):not([class*="disabled:"]):not([class*="active:"]):not([class*="focus:"]) {
+    all: unset !important;
+    box-sizing: border-box !important;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+    color: inherit !important;
+    background: transparent !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    outline: none !important;
+    text-decoration: none !important;
+    list-style: none !important;
+    vertical-align: baseline !important;
+  }
+  
+  /* Explicitly preserve React Flow styling */
+  [class*="react-flow"],
+  .react-flow,
+  [data-id],
+  [data-testid*="react-flow"],
+  [data-reactflow],
+  .react-flow *,
+  [class*="react-flow"] *,
+  [data-id] *,
+  [data-testid*="react-flow"] *,
+  [data-reactflow] * {
+    all: revert !important;
+  }
+
+  /* Reset pseudo-elements, but preserve React Flow */
+  *:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow])::before,
+  *:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow])::after {
+    all: unset !important;
+    box-sizing: border-box !important;
+    content: none !important;
+  }
+
+  /* Re-establish necessary display properties, but preserve React Flow */
+  div:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]), 
+  section:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]), 
+  article:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]), 
+  aside:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]), 
+  nav:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]), 
+  header:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]), 
+  footer:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]), 
+  main:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]) {
+    display: block !important;
+  }
+
+  span:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]), 
+  em:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]), 
+  strong:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]), 
+  small:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]), 
+  mark:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]), 
+  del:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]), 
+  ins:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]), 
+  sub:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]), 
+  sup:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]) {
+    display: inline !important;
+  }
+
+  button:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]) {
+    display: inline-block !important;
+    cursor: pointer !important;
+    font-family: inherit !important;
+    font-size: inherit !important;
+    line-height: inherit !important;
+    background: transparent !important;
+    border: none !important;
+    color: inherit !important;
+  }
+
+  input:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]), 
+  select:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]), 
+  textarea:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]) {
+    display: inline-block !important;
+    font-family: inherit !important;
+    font-size: inherit !important;
+    line-height: inherit !important;
+    color: inherit !important;
+    background: #ffffff !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 4px !important;
+    padding: 4px 8px !important;
+  }
+
+  input:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]):focus, 
+  select:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]):focus, 
+  textarea:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]):focus {
+    outline: 2px solid #3b82f6 !important;
+    outline-offset: 0 !important;
+  }
+
+  h1:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]), 
+  h2:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]), 
+  h3:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]), 
+  h4:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]), 
+  h5:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]), 
+  h6:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]) {
+    display: block !important;
+    font-weight: 600 !important;
+    margin: 0 !important;
+    font-family: inherit !important;
+    color: inherit !important;
+  }
+
+  p:not([class*="react-flow"]):not(.react-flow):not([data-id]):not([data-testid*="react-flow"]):not([data-reactflow]) {
+    display: block !important;
+    margin: 0 !important;
+  }
+
+  /* React Flow specific overrides */
+  .react-flow {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    color: #374151 !important;
+  }
+
+  .react-flow * {
+    box-sizing: border-box !important;
+  }
+
+  .react-flow__node {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    font-family: inherit !important;
+    font-size: inherit !important;
+    line-height: inherit !important;
+    color: inherit !important;
+  }
+
+  .react-flow__node-default {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    font-family: inherit !important;
+    font-size: inherit !important;
+    line-height: inherit !important;
+    color: inherit !important;
+    width: auto !important;
+    height: auto !important;
+  }
+
+  .react-flow__handle {
+    width: 16px !important;
+    height: 16px !important;
+    border: 2px solid #ffffff !important;
+    border-radius: 50% !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+    background: #6b7280 !important;
+    position: absolute !important;
+  }
+
+  .react-flow__handle-connecting {
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3) !important;
+  }
+
+  .react-flow__edge-path {
+    stroke-width: 2 !important;
+    stroke: #b1b1b7 !important;
+  }
+
+  .react-flow__edge.selected .react-flow__edge-path {
+    stroke: #3b82f6 !important;
+  }
+
+  /* Custom node styles with maximum specificity */
+  .formmy-node {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    color: #374151 !important;
+    background: #ffffff !important;
+    border: 2px solid #e5e7eb !important;
+    border-radius: 24px !important;
+    padding: 16px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+    min-width: 200px !important;
+    position: relative !important;
+    display: block !important;
+    margin: 0 !important;
+    text-align: left !important;
+    text-decoration: none !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    word-spacing: normal !important;
+    text-indent: 0 !important;
+    text-shadow: none !important;
+    list-style: none !important;
+    vertical-align: baseline !important;
+  }
+
+  .formmy-node * {
+    font-family: inherit !important;
+    color: inherit !important;
+  }
+
+  /* Input styles with aggressive overrides */
+  .formmy-input {
+    width: 100% !important;
+    padding: 8px 12px !important;
+    border: 2px solid #d1d5db !important;
+    border-radius: 8px !important;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+    background: #ffffff !important;
+    color: #374151 !important;
+    outline: none !important;
+    box-shadow: none !important;
+    appearance: none !important;
+    margin: 0 !important;
+    text-align: left !important;
+    text-decoration: none !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    word-spacing: normal !important;
+    text-indent: 0 !important;
+    text-shadow: none !important;
+    display: block !important;
+    box-sizing: border-box !important;
+  }
+
+  .formmy-input:focus {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+    outline: none !important;
+  }
+
+  .formmy-textarea {
+    resize: vertical !important;
+    min-height: 80px !important;
+  }
+
+  /* Button styles with aggressive overrides */
+  .formmy-button {
+    padding: 6px 12px !important;
+    border-radius: 6px !important;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    text-align: center !important;
+    cursor: pointer !important;
+    outline: none !important;
+    background: #ffffff !important;
+    color: #374151 !important;
+    border: 1px solid #d1d5db !important;
+    margin: 0 !important;
+    text-decoration: none !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    word-spacing: normal !important;
+    text-indent: 0 !important;
+    text-shadow: none !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
+    box-sizing: border-box !important;
+    line-height: 1.5 !important;
+  }
+
+  .formmy-button:hover {
+    background: #f9fafb !important;
+    border-color: #9ca3af !important;
+  }
+
+  .formmy-button-primary {
+    background: #3b82f6 !important;
+    color: #ffffff !important;
+    border: 1px solid #3b82f6 !important;
+  }
+
+  .formmy-button-primary:hover {
+    background: #2563eb !important;
+    border-color: #2563eb !important;
+  }
+
+  /* Select styles */
+  .formmy-select {
+    width: 100% !important;
+    padding: 6px 10px !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 6px !important;
+    background: #ffffff !important;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+    font-size: 12px !important;
+    color: #374151 !important;
+    outline: none !important;
+    margin: 0 !important;
+    appearance: none !important;
+    box-sizing: border-box !important;
+    display: block !important;
+    line-height: 1.5 !important;
+  }
+
+  .formmy-select:focus {
+    border-color: #3b82f6 !important;
+    outline: none !important;
+  }
+
+  /* Panel and sidebar styles */
+  .formmy-panel {
+    background: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+    color: #374151 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    box-sizing: border-box !important;
+  }
+
+  .formmy-sidebar {
+    background: #ffffff !important;
+    border-right: 1px solid #e5e7eb !important;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+    color: #374151 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Utility classes with maximum specificity */
+  .formmy-text-xs { font-size: 12px !important; }
+  .formmy-text-sm { font-size: 14px !important; }
+  .formmy-text-base { font-size: 16px !important; }
+  
+  .formmy-font-medium { font-weight: 500 !important; }
+  .formmy-font-semibold { font-weight: 600 !important; }
+  .formmy-font-bold { font-weight: 700 !important; }
+  
+  .formmy-text-gray-500 { color: #6b7280 !important; }
+  .formmy-text-gray-600 { color: #4b5563 !important; }
+  .formmy-text-gray-700 { color: #374151 !important; }
+  .formmy-text-gray-800 { color: #1f2937 !important; }
+  
+  .formmy-bg-white { background-color: #ffffff !important; }
+  .formmy-bg-gray-50 { background-color: #f9fafb !important; }
+  .formmy-bg-gray-100 { background-color: #f3f4f6 !important; }
+  
+  .formmy-border { border: 1px solid #e5e7eb !important; }
+  .formmy-border-gray-200 { border-color: #e5e7eb !important; }
+  .formmy-border-gray-300 { border-color: #d1d5db !important; }
+  
+  .formmy-rounded { border-radius: 6px !important; }
+  .formmy-rounded-lg { border-radius: 8px !important; }
+  .formmy-rounded-xl { border-radius: 12px !important; }
+  
+  .formmy-shadow-sm { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important; }
+  .formmy-shadow { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important; }
+  .formmy-shadow-lg { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important; }
+  
+  .formmy-p-2 { padding: 8px !important; }
+  .formmy-p-3 { padding: 12px !important; }
+  .formmy-p-4 { padding: 16px !important; }
+  
+  .formmy-m-2 { margin: 8px !important; }
+  .formmy-m-3 { margin: 12px !important; }
+  .formmy-m-4 { margin: 16px !important; }
+  
+  .formmy-mb-2 { margin-bottom: 8px !important; }
+  .formmy-mb-3 { margin-bottom: 12px !important; }
+  .formmy-mb-4 { margin-bottom: 16px !important; }
+  
+  .formmy-flex { display: flex !important; }
+  .formmy-items-center { align-items: center !important; }
+  .formmy-justify-center { justify-content: center !important; }
+  .formmy-justify-between { justify-content: space-between !important; }
+  
+  .formmy-gap-2 { gap: 8px !important; }
+  .formmy-gap-3 { gap: 12px !important; }
+  .formmy-gap-4 { gap: 16px !important; }
+  
+  .formmy-w-full { width: 100% !important; }
+  .formmy-h-full { height: 100% !important; }
+
+  /* Override any Tailwind or Bootstrap classes that might interfere */
+  .min-w-0,
+  .min-w-full,
+  .max-w-none,
+  .max-w-xs,
+  .max-w-sm,
+  .max-w-md,
+  .max-w-lg,
+  .max-w-xl,
+  .max-w-2xl,
+  .max-w-3xl,
+  .max-w-4xl,
+  .max-w-5xl,
+  .max-w-6xl,
+  .max-w-7xl,
+  .max-w-full,
+  .w-0,
+  .w-1,
+  .w-2,
+  .w-3,
+  .w-4,
+  .w-5,
+  .w-6,
+  .w-8,
+  .w-10,
+  .w-12,
+  .w-16,
+  .w-20,
+  .w-24,
+  .w-32,
+  .w-40,
+  .w-48,
+  .w-56,
+  .w-64,
+  .w-72,
+  .w-80,
+  .w-96,
+  .w-auto,
+  .w-px,
+  .w-1\/2,
+  .w-1\/3,
+  .w-2\/3,
+  .w-1\/4,
+  .w-2\/4,
+  .w-3\/4,
+  .w-1\/5,
+  .w-2\/5,
+  .w-3\/5,
+  .w-4\/5,
+  .w-1\/6,
+  .w-2\/6,
+  .w-3\/6,
+  .w-4\/6,
+  .w-5\/6,
+  .w-1\/12,
+  .w-2\/12,
+  .w-3\/12,
+  .w-4\/12,
+  .w-5\/12,
+  .w-6\/12,
+  .w-7\/12,
+  .w-8\/12,
+  .w-9\/12,
+  .w-10\/12,
+  .w-11\/12,
+  .w-full,
+  .w-screen {
+    width: auto !important;
+  }
+
+  /* Force our styles on common Tailwind classes */
+  .p-0, .p-1, .p-2, .p-3, .p-4, .p-5, .p-6, .p-8, .p-10, .p-12, .p-16, .p-20, .p-24, .p-32, .p-40, .p-48, .p-56, .p-64, .p-72, .p-80, .p-96,
+  .m-0, .m-1, .m-2, .m-3, .m-4, .m-5, .m-6, .m-8, .m-10, .m-12, .m-16, .m-20, .m-24, .m-32, .m-40, .m-48, .m-56, .m-64, .m-72, .m-80, .m-96 {
+    padding: revert !important;
+    margin: revert !important;
+  }
+
+  .bg-white, .bg-gray-50, .bg-gray-100, .bg-gray-200, .bg-gray-300, .bg-gray-400, .bg-gray-500, .bg-gray-600, .bg-gray-700, .bg-gray-800, .bg-gray-900 {
+    background-color: revert !important;
+  }
+
+  .text-xs, .text-sm, .text-base, .text-lg, .text-xl, .text-2xl, .text-3xl, .text-4xl, .text-5xl, .text-6xl, .text-7xl, .text-8xl, .text-9xl {
+    font-size: revert !important;
+  }
+
+  .font-thin, .font-extralight, .font-light, .font-normal, .font-medium, .font-semibold, .font-bold, .font-extrabold, .font-black {
+    font-weight: revert !important;
+  }
+}

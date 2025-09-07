@@ -1,5 +1,11 @@
-import { useCallback, useRef, useState, useEffect, type DragEvent } from "react";
-import toast, { Toaster } from 'react-hot-toast';
+import {
+  useCallback,
+  useRef,
+  useState,
+  useEffect,
+  type DragEvent,
+} from "react";
+import toast, { Toaster } from "react-hot-toast";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -28,9 +34,19 @@ import {
 } from "./CustomNodes";
 import { GlobalSettings, useGlobalConfig } from "./components/GlobalSettings";
 import { ExecutionEngine } from "./runtime/ExecutionEngine";
-import { FiEdit, FiFileText, FiZap, FiPlay, FiSettings, FiSave } from "react-icons/fi";
+import {
+  FiEdit,
+  FiFileText,
+  FiZap,
+  FiPlay,
+  FiSettings,
+  FiSave,
+} from "react-icons/fi";
 import { HiOutlineSparkles } from "react-icons/hi2";
 import { RiRobot2Line } from "react-icons/ri";
+import InlineBetaBadge from "./InlineBetaBadge";
+
+import { cn } from './utils/cn';
 
 // Tipos de nodos disponibles para arrastrar
 const nodeTypes = [
@@ -158,45 +174,53 @@ interface FlowCanvasProps {
   readonly?: boolean;
 }
 
-function FlowCanvas({ onSave: onSaveCallback, onExecute: onExecuteCallback, readonly }: FlowCanvasProps) {
+function FlowCanvas({
+  onSave: onSaveCallback,
+  onExecute: onExecuteCallback,
+  readonly,
+}: FlowCanvasProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const { screenToFlowPosition } = useReactFlow();
-  
+
   // Estado para ejecución del flujo
   const [isExecuting, setIsExecuting] = useState(false);
   const [executionResult, setExecutionResult] = useState<any>(null);
   const [executionLogs, setExecutionLogs] = useState<string[]>([]);
-  
+
   // Variables globales y configuración
-  const { config: globalConfig, saveConfig: saveGlobalConfig } = useGlobalConfig();
+  const { config: globalConfig, saveConfig: saveGlobalConfig } =
+    useGlobalConfig();
   const [showGlobalSettings, setShowGlobalSettings] = useState(false);
-  
+
   // Estado para cambios no guardados
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [lastSavedState, setLastSavedState] = useState('');
+  const [lastSavedState, setLastSavedState] = useState("");
   const [isLoaded, setIsLoaded] = useState(false);
-  
+
   // Instancia del ExecutionEngine
   const executionEngine = useRef(new ExecutionEngine()).current;
 
   // Función para duplicar nodo
-  const duplicateNode = useCallback((nodeId: string) => {
-    const nodeToDuplicate = nodes.find(n => n.id === nodeId);
-    if (nodeToDuplicate) {
-      const newNode = {
-        ...nodeToDuplicate,
-        id: `${nodeToDuplicate.type}_${Date.now()}`,
-        position: {
-          x: nodeToDuplicate.position.x + 50,
-          y: nodeToDuplicate.position.y + 50,
-        },
-        selected: false,
-      };
-      setNodes(prevNodes => [...prevNodes, newNode]);
-    }
-  }, [nodes, setNodes]);
+  const duplicateNode = useCallback(
+    (nodeId: string) => {
+      const nodeToDuplicate = nodes.find((n) => n.id === nodeId);
+      if (nodeToDuplicate) {
+        const newNode = {
+          ...nodeToDuplicate,
+          id: `${nodeToDuplicate.type}_${Date.now()}`,
+          position: {
+            x: nodeToDuplicate.position.x + 50,
+            y: nodeToDuplicate.position.y + 50,
+          },
+          selected: false,
+        };
+        setNodes((prevNodes) => [...prevNodes, newNode]);
+      }
+    },
+    [nodes, setNodes]
+  );
 
   const onConnect: OnConnect = useCallback(
     (params) => {
@@ -208,17 +232,17 @@ function FlowCanvas({ onSave: onSaveCallback, onExecute: onExecuteCallback, read
             style: connectionStyle,
             animated: true,
           },
-          eds,
-        ),
+          eds
+        )
       );
     },
-    [setEdges],
+    [setEdges]
   );
 
   const onDragStart = (
     event: DragEvent,
     nodeType: string,
-    componentInfo?: any,
+    componentInfo?: any
   ) => {
     const dragData = {
       nodeType,
@@ -226,7 +250,7 @@ function FlowCanvas({ onSave: onSaveCallback, onExecute: onExecuteCallback, read
     };
     event.dataTransfer.setData(
       "application/reactflow",
-      JSON.stringify(dragData),
+      JSON.stringify(dragData)
     );
     event.dataTransfer.effectAllowed = "move";
   };
@@ -236,7 +260,7 @@ function FlowCanvas({ onSave: onSaveCallback, onExecute: onExecuteCallback, read
       event.preventDefault();
 
       const dragDataString = event.dataTransfer.getData(
-        "application/reactflow",
+        "application/reactflow"
       );
       if (!dragDataString) return;
 
@@ -281,7 +305,7 @@ function FlowCanvas({ onSave: onSaveCallback, onExecute: onExecuteCallback, read
       } else {
         // Built-in component
         const nodeTypeConfig = nodeTypes.find(
-          (nt) => nt.type === dragData.nodeType,
+          (nt) => nt.type === dragData.nodeType
         );
         newNode = {
           id: getId(),
@@ -295,13 +319,13 @@ function FlowCanvas({ onSave: onSaveCallback, onExecute: onExecuteCallback, read
 
       setNodes((nds) => nds.concat(newNode));
     },
-    [screenToFlowPosition, setNodes],
+    [screenToFlowPosition, setNodes]
   );
 
   // Función para ejecutar el flujo completo
   const executeFlow = useCallback(async () => {
     if (isExecuting) return;
-    
+
     setIsExecuting(true);
     setExecutionResult(null);
     setExecutionLogs([]);
@@ -312,41 +336,52 @@ function FlowCanvas({ onSave: onSaveCallback, onExecute: onExecuteCallback, read
       console.log("Conexiones:", edges);
 
       // Obtener datos del nodo Input si existe
-      const inputNode = nodes.find(n => n.type === 'input');
-      const inputText = inputNode?.data?.text || inputNode?.data?.label || "Hello, how are you today?";
+      const inputNode = nodes.find((n) => n.type === "input");
+      const inputText =
+        inputNode?.data?.text ||
+        inputNode?.data?.label ||
+        "Hello, how are you today?";
 
       const initialInputs = {
         prompt: inputText,
-        input: inputText
+        input: inputText,
       };
 
       // Marcar todos los nodos como idle al inicio
-      setNodes(prevNodes => prevNodes.map(node => ({
-        ...node,
-        data: { ...node.data, executionStatus: 'idle' }
-      })));
+      setNodes((prevNodes) =>
+        prevNodes.map((node) => ({
+          ...node,
+          data: { ...node.data, executionStatus: "idle" },
+        }))
+      );
 
       // Crear un callback para actualizar el estado de los nodos
-      const updateNodeStatus = (nodeId: string, status: 'running' | 'success' | 'error', result?: any) => {
-        setNodes(prevNodes => prevNodes.map(node => 
-          node.id === nodeId 
-            ? { 
-                ...node, 
-                data: { 
-                  ...node.data, 
-                  executionStatus: status,
-                  result: result 
-                } 
-              }
-            : node
-        ));
+      const updateNodeStatus = (
+        nodeId: string,
+        status: "running" | "success" | "error",
+        result?: any
+      ) => {
+        setNodes((prevNodes) =>
+          prevNodes.map((node) =>
+            node.id === nodeId
+              ? {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    executionStatus: status,
+                    result: result,
+                  },
+                }
+              : node
+          )
+        );
       };
 
       // Ejecutar flujo usando el ExecutionEngine con seguimiento de estado
       const flowId = `flow_${Date.now()}`;
-      
+
       // Mostrar que estamos iniciando
-      toast.loading('Ejecutando flujo...', { id: 'flow-execution' });
+      toast.loading("Ejecutando flujo...", { id: "flow-execution" });
 
       const execution = await executionEngine.executeFlow(
         flowId,
@@ -359,22 +394,24 @@ function FlowCanvas({ onSave: onSaveCallback, onExecute: onExecuteCallback, read
       console.log("✅ Ejecución completada:", execution);
 
       // Actualizar Output nodes con resultados
-      const outputNodes = nodes.filter(n => n.type === 'output');
+      const outputNodes = nodes.filter((n) => n.type === "output");
       if (outputNodes.length > 0 && execution.results.size > 0) {
         const lastResult = Array.from(execution.results.values()).pop();
         if (lastResult && lastResult.outputs.response) {
-          setNodes(prevNodes => prevNodes.map(node => 
-            node.type === 'output'
-              ? { 
-                  ...node, 
-                  data: { 
-                    ...node.data, 
-                    result: lastResult.outputs.response,
-                    executionStatus: 'success'
-                  } 
-                }
-              : node
-          ));
+          setNodes((prevNodes) =>
+            prevNodes.map((node) =>
+              node.type === "output"
+                ? {
+                    ...node,
+                    data: {
+                      ...node.data,
+                      result: lastResult.outputs.response,
+                      executionStatus: "success",
+                    },
+                  }
+                : node
+            )
+          );
         }
       }
 
@@ -392,27 +429,34 @@ function FlowCanvas({ onSave: onSaveCallback, onExecute: onExecuteCallback, read
       setExecutionLogs(allLogs);
 
       // Success toast
-      toast.success('¡Flujo ejecutado exitosamente!', { id: 'flow-execution' });
-      
+      toast.success("¡Flujo ejecutado exitosamente!", { id: "flow-execution" });
+
       // Call external callback if provided
       if (onExecuteCallback) {
         try {
           await onExecuteCallback({ nodes, edges });
         } catch (callbackError) {
-          console.warn('External onExecute callback failed:', callbackError);
+          console.warn("External onExecute callback failed:", callbackError);
         }
       }
-
     } catch (error) {
       console.error("💥 Error ejecutando flujo:", error);
-      setExecutionLogs(prev => [...prev, `💥 Error: ${error instanceof Error ? error.message : String(error)}`]);
-      toast.error(`Error: ${error instanceof Error ? error.message : String(error)}`, { id: 'flow-execution' });
-      
+      setExecutionLogs((prev) => [
+        ...prev,
+        `💥 Error: ${error instanceof Error ? error.message : String(error)}`,
+      ]);
+      toast.error(
+        `Error: ${error instanceof Error ? error.message : String(error)}`,
+        { id: "flow-execution" }
+      );
+
       // Mark all nodes as error
-      setNodes(prevNodes => prevNodes.map(node => ({
-        ...node,
-        data: { ...node.data, executionStatus: 'error' }
-      })));
+      setNodes((prevNodes) =>
+        prevNodes.map((node) => ({
+          ...node,
+          data: { ...node.data, executionStatus: "error" },
+        }))
+      );
     } finally {
       setIsExecuting(false);
     }
@@ -424,34 +468,38 @@ function FlowCanvas({ onSave: onSaveCallback, onExecute: onExecuteCallback, read
   }, []);
 
   // Handler para click en nodos con Option key
-  const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
-    if (event.altKey) { // altKey es Option en Mac
-      event.preventDefault();
-      duplicateNode(node.id);
-    }
-  }, [duplicateNode]);
+  const onNodeClick = useCallback(
+    (event: React.MouseEvent, node: Node) => {
+      if (event.altKey) {
+        // altKey es Option en Mac
+        event.preventDefault();
+        duplicateNode(node.id);
+      }
+    },
+    [duplicateNode]
+  );
 
   // Función para guardar el flujo usando React Flow best practices
   const { toObject } = useReactFlow();
-  
+
   const saveFlow = useCallback(() => {
     const flow = toObject();
-    localStorage.setItem('ai-flow-canvas-state', JSON.stringify(flow));
+    localStorage.setItem("ai-flow-canvas-state", JSON.stringify(flow));
     setLastSavedState(JSON.stringify(flow));
     setHasUnsavedChanges(false);
-    
+
     // Call external callback if provided
     if (onSaveCallback) {
       onSaveCallback(flow);
     }
-    
-    toast.success('Flujo guardado exitosamente! 💾');
+
+    toast.success("Flujo guardado exitosamente! 💾");
   }, [toObject, onSaveCallback]);
 
   // Detectar cambios en el flujo (solo después de cargar)
   useEffect(() => {
     if (!isLoaded || !lastSavedState) return;
-    
+
     const currentState = JSON.stringify(toObject());
     const hasChanges = currentState !== lastSavedState;
     setHasUnsavedChanges(hasChanges);
@@ -462,7 +510,8 @@ function FlowCanvas({ onSave: onSaveCallback, onExecute: onExecuteCallback, read
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
         event.preventDefault();
-        event.returnValue = '¿Estás seguro de que quieres salir? Hay cambios sin guardar.';
+        event.returnValue =
+          "¿Estás seguro de que quieres salir? Hay cambios sin guardar.";
         return event.returnValue;
       }
       // Si no hay cambios, permitir salida sin alerta
@@ -470,9 +519,11 @@ function FlowCanvas({ onSave: onSaveCallback, onExecute: onExecuteCallback, read
 
     const handlePopState = () => {
       if (hasUnsavedChanges) {
-        const confirm = window.confirm('¿Estás seguro de que quieres salir? Hay cambios sin guardar.');
+        const confirm = window.confirm(
+          "¿Estás seguro de que quieres salir? Hay cambios sin guardar."
+        );
         if (!confirm) {
-          window.history.pushState(null, '', window.location.href);
+          window.history.pushState(null, "", window.location.href);
         }
       }
       // Si no hay cambios, permitir navegación sin alerta
@@ -480,19 +531,19 @@ function FlowCanvas({ onSave: onSaveCallback, onExecute: onExecuteCallback, read
 
     // Solo agregar listeners si hay cambios sin guardar
     if (hasUnsavedChanges) {
-      window.addEventListener('beforeunload', handleBeforeUnload);
-      window.addEventListener('popstate', handlePopState);
+      window.addEventListener("beforeunload", handleBeforeUnload);
+      window.addEventListener("popstate", handlePopState);
     }
 
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("popstate", handlePopState);
     };
   }, [hasUnsavedChanges]);
 
   // Cargar estado guardado al inicio usando React Flow format
   useEffect(() => {
-    const savedFlow = localStorage.getItem('ai-flow-canvas-state');
+    const savedFlow = localStorage.getItem("ai-flow-canvas-state");
     if (savedFlow) {
       try {
         const flow = JSON.parse(savedFlow);
@@ -502,11 +553,14 @@ function FlowCanvas({ onSave: onSaveCallback, onExecute: onExecuteCallback, read
           setLastSavedState(savedFlow);
         }
       } catch (error) {
-        console.warn('Error cargando flujo guardado:', error);
+        console.warn("Error cargando flujo guardado:", error);
       }
     } else {
       // Si no hay estado guardado, usar inicial y marcarlo como guardado
-      const initialState = JSON.stringify({ nodes: initialNodes, edges: initialEdges });
+      const initialState = JSON.stringify({
+        nodes: initialNodes,
+        edges: initialEdges,
+      });
       setLastSavedState(initialState);
     }
     setIsLoaded(true);
@@ -516,18 +570,18 @@ function FlowCanvas({ onSave: onSaveCallback, onExecute: onExecuteCallback, read
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       // Cmd+S en Mac o Ctrl+S en Windows/Linux
-      if ((event.metaKey || event.ctrlKey) && event.key === 's') {
+      if ((event.metaKey || event.ctrlKey) && event.key === "s") {
         event.preventDefault(); // Prevenir el save del navegador
-        
+
         // Solo guardar si hay cambios
         if (hasUnsavedChanges) {
           saveFlow();
         } else {
-          toast('No hay cambios para guardar', {
-            icon: '💾',
+          toast("No hay cambios para guardar", {
+            icon: "💾",
             style: {
-              background: '#f3f4f6',
-              color: '#6b7280',
+              background: "#f3f4f6",
+              color: "#6b7280",
             },
           });
         }
@@ -535,21 +589,26 @@ function FlowCanvas({ onSave: onSaveCallback, onExecute: onExecuteCallback, read
     };
 
     // Agregar event listener
-    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
 
     // Cleanup
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [hasUnsavedChanges, saveFlow]);
 
   return (
     <div className="flex w-screen h-screen bg-gray-50">
       {/* Sidebar */}
-      <div className="w-72 min-w-72 max-w-72 flex-shrink-0 bg-white border-r border-gray-200 shadow-lg z-20 overflow-y-auto overflow-x-hidden max-h-screen p-4" style={{maxWidth: '288px'}}>
-        <div className="flex items-center justify-between px-2 mb-4">
-          <h3 className="text-lg font-bold text-gray-800">
+      <div
+        data-sidebar
+        className="w-72 min-w-72 max-w-72 flex-shrink-0 bg-white border-r border-gray-200 shadow-lg z-20 flex flex-col max-h-screen"
+        style={{ maxWidth: "288px" }}
+      >
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <h3 className="text-lg font-bold text-gray-800 flex items-center">
             Paleta de Nodos
+            <InlineBetaBadge />
           </h3>
           <button
             onClick={() => setShowGlobalSettings(true)}
@@ -559,74 +618,83 @@ function FlowCanvas({ onSave: onSaveCallback, onExecute: onExecuteCallback, read
             <FiSettings size={16} />
           </button>
         </div>
-        
-        {/* Botón Ejecutar Flujo */}
-        <div className="px-6 mb-6">
-          <button
-            onClick={executeFlow}
-            disabled={isExecuting}
-            className={`w-full py-3 px-4 rounded-xl font-bold text-white transition-all duration-200 flex items-center justify-center gap-2 ${
-              isExecuting
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl'
-            }`}
-          >
-            <FiPlay size={16} />
-            {isExecuting ? 'Ejecutando...' : 'Ejecutar Flujo'}
-          </button>
-          
-          {executionResult && (
-            <div className="mt-3 p-3 bg-gray-50 rounded-lg text-xs">
-              <div className="font-bold text-gray-700 mb-2">Estado: {executionResult.status}</div>
-              {executionLogs.length > 0 && (
-                <div className="max-h-32 overflow-y-auto">
-                  {executionLogs.slice(-5).map((log, i) => (
-                    <div key={i} className="text-gray-600 text-[10px] py-1">{log}</div>
-                  ))}
-                </div>
+
+        <div className="flex-1 overflow-y-auto px-4 py-2">
+          {/* Botón Ejecutar Flujo */}
+          <div className="mb-6">
+            <button
+              data-execute-btn
+              onClick={executeFlow}
+              disabled={isExecuting}
+              className={cn(
+                "w-full py-3 px-4 rounded-xl font-bold text-white transition-all duration-200 flex items-center justify-center gap-2",
+                isExecuting
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
               )}
-            </div>
-          )}
-        </div>
-        <div className="flex flex-col gap-4">
-          {nodeTypes.map((nodeType) => (
-            <div
-              key={nodeType.type}
-              className="w-full h-20 bg-white border border-gray-300 rounded-2xl shadow-sm hover:shadow-md hover:border-gray-400 cursor-grab active:cursor-grabbing transition-all flex items-center p-4"
-              draggable
-              onDragStart={(event) => onDragStart(event, nodeType.type)}
             >
+              <FiPlay size={16} />
+              {isExecuting ? "Ejecutando..." : "Ejecutar Flujo"}
+            </button>
+
+            {executionResult && (
+              <div className="mt-3 p-3 bg-gray-50 rounded-lg text-xs">
+                <div className="font-bold text-gray-700 mb-2">
+                  Estado: {executionResult.status}
+                </div>
+                {executionLogs.length > 0 && (
+                  <div className="max-h-32 overflow-y-auto">
+                    {executionLogs.slice(-5).map((log, i) => (
+                      <div key={i} className="text-gray-600 text-[10px] py-1">
+                        {log}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          <div className="flex flex-col gap-4">
+            {nodeTypes.map((nodeType) => (
               <div
-                className={`
+                key={nodeType.type}
+                data-node-item
+                className="w-full h-20 bg-white border border-gray-300 rounded-2xl shadow-sm hover:shadow-md hover:border-gray-400 cursor-grab active:cursor-grabbing transition-all flex items-center p-4"
+                draggable
+                onDragStart={(event) => onDragStart(event, nodeType.type)}
+              >
+                <div
+                  className={`
 
                   w-[40px] h-10 rounded-xl bg-gradient-to-br ${nodeType.gradient} flex items-center justify-center text-white shadow-sm flex-shrink-0 pr-6`}
-              >
-                <nodeType.icon size={16} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div
-                  className={`font-semibold text-sm ${nodeType.textColor} truncate mb-1`}
                 >
-                  {nodeType.title}
+                  <nodeType.icon size={16} />
                 </div>
-                <div className="text-gray-400 text-[10px] truncate">
-                  {nodeType.description}
+                <div className="flex-1 min-w-0">
+                  <div
+                    className={`font-semibold text-sm ${nodeType.textColor} truncate mb-1`}
+                  >
+                    {nodeType.title}
+                  </div>
+                  <div className="text-gray-400 text-[10px] truncate">
+                    {nodeType.description}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
-        {/* Instructions */}
-        <div className="mt-8 p-5 bg-gray-50 rounded-2xl shadow-sm">
-          <h4 className="font-semibold text-xs text-gray-700 mb-3">
-            💡 Cómo usar:
-          </h4>
-          <ul className="text-[12px] text-gray-600 space-y-2">
-            <li> Arrastra nodos al canvas</li>
-            <li> Conecta izquierda → derecha</li>
-            <li> Ajuste automático a la cuadrícula</li>
-          </ul>
+          {/* Instructions */}
+          <div className="mt-8 p-5 bg-gray-50 rounded-2xl shadow-sm">
+            <h4 className="font-semibold text-xs text-gray-700 mb-3">
+              💡 Cómo usar:
+            </h4>
+            <ul className="text-[12px] text-gray-600 space-y-2">
+              <li> Arrastra nodos al canvas</li>
+              <li> Conecta izquierda → derecha</li>
+              <li> Ajuste automático a la cuadrícula</li>
+            </ul>
+          </div>
         </div>
       </div>
 
@@ -682,21 +750,31 @@ function FlowCanvas({ onSave: onSaveCallback, onExecute: onExecuteCallback, read
             pannable={true}
             zoomable={true}
           />
-          <Background variant={BackgroundVariant.Dots} gap={16} size={1.5} color="#e5e7eb" />
-          
+          <Background
+            variant={BackgroundVariant.Dots}
+            gap={16}
+            size={1.5}
+            color="#e5e7eb"
+          />
+
           {/* Panel superior derecho con botones */}
           <Panel position="top-right">
             <div className="flex items-center gap-3">
               {/* Botón Guardar */}
               <button
+                data-save-btn
                 className={`px-4 py-2 rounded-xl flex items-center gap-2 font-medium transition-all hover:shadow-lg ${
                   hasUnsavedChanges
-                    ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white'
-                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                    ? "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white"
+                    : "bg-gray-200 text-gray-500 cursor-not-allowed"
                 }`}
                 onClick={saveFlow}
                 disabled={!hasUnsavedChanges}
-                title={hasUnsavedChanges ? 'Guardar cambios (Cmd+S / Ctrl+S)' : 'No hay cambios para guardar'}
+                title={
+                  hasUnsavedChanges
+                    ? "Guardar cambios (Cmd+S / Ctrl+S)"
+                    : "No hay cambios para guardar"
+                }
               >
                 <FiSave size={16} />
                 Guardar
@@ -704,46 +782,47 @@ function FlowCanvas({ onSave: onSaveCallback, onExecute: onExecuteCallback, read
 
               {/* Botón Ejecutar */}
               <button
+                data-panel-execute-btn
                 className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 font-medium transition-all hover:shadow-lg"
                 onClick={executeFlow}
                 disabled={isExecuting}
               >
                 <FiPlay size={16} />
-                {isExecuting ? 'Ejecutando...' : 'Ejecutar'}
+                {isExecuting ? "Ejecutando..." : "Ejecutar"}
               </button>
             </div>
           </Panel>
         </ReactFlow>
-
       </div>
 
       {/* Global Settings Modal */}
-      <GlobalSettings 
+      <GlobalSettings
         isOpen={showGlobalSettings}
         onClose={() => setShowGlobalSettings(false)}
         globalConfig={globalConfig}
         onSave={saveGlobalConfig}
       />
-      
+
       {/* Toast notifications */}
       <Toaster
         position="top-center"
         toastOptions={{
           duration: 3000,
           style: {
-            background: '#fff',
-            color: '#333',
-            border: '1px solid #e5e7eb',
-            borderRadius: '12px',
-            fontSize: '14px',
-            fontWeight: '500',
-            padding: '12px 16px',
-            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            background: "#fff",
+            color: "#333",
+            border: "1px solid #e5e7eb",
+            borderRadius: "12px",
+            fontSize: "14px",
+            fontWeight: "500",
+            padding: "12px 16px",
+            boxShadow:
+              "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
           },
           success: {
             iconTheme: {
-              primary: '#10b981',
-              secondary: '#fff',
+              primary: "#10b981",
+              secondary: "#fff",
             },
           },
         }}

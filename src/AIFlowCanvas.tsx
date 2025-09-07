@@ -1,6 +1,9 @@
 import React from 'react';
 import { Toaster } from 'react-hot-toast';
 import App from './App';
+import StyleIsolator from './StyleIsolator';
+import AggressiveStyleIsolator from './AggressiveStyleIsolator';
+import './isolated-styles.css';
 
 export interface AIFlowCanvasProps {
   /**
@@ -45,6 +48,45 @@ export interface AIFlowCanvasProps {
    * Custom styles
    */
   style?: React.CSSProperties;
+  
+  /**
+   * Whether to show the toaster notifications
+   */
+  showToaster?: boolean;
+  
+  /**
+   * Force aggressive CSS isolation with !important declarations
+   * Use this when external frameworks (Tailwind, Bootstrap) interfere
+   */
+  forceIsolation?: boolean;
+  
+  /**
+   * CSS reset strategy for style isolation
+   * - 'revert': Reverts to browser defaults (good for Tailwind override)
+   * - 'unset': Removes all styles (most aggressive)
+   * - 'initial': Sets to CSS initial values
+   */
+  resetCSS?: 'revert' | 'unset' | 'initial';
+  
+  /**
+   * Custom styles for the container (applied with high specificity)
+   */
+  customStyles?: React.CSSProperties;
+  
+  /**
+   * Override Tailwind classes for styling (uses tailwind-merge for conflict resolution)
+   * 
+   * @example
+   * // Change button color from green to purple
+   * <AIFlowCanvas className="[&_[data-execute-btn]]:bg-purple-500 [&_[data-execute-btn]:hover]:bg-purple-600" />
+   * 
+   * // Change sidebar background
+   * <AIFlowCanvas className="[&_[data-sidebar]]:bg-gray-100" />
+   * 
+   * // Multiple customizations
+   * <AIFlowCanvas className="[&_[data-execute-btn]]:bg-red-500 [&_[data-node-item]]:border-blue-500" />
+   */
+  
 }
 
 /**
@@ -74,6 +116,10 @@ export default function AIFlowCanvas({
   readonly = false,
   className = '',
   style = {},
+  showToaster = true,
+  forceIsolation = false,
+  resetCSS = 'revert',
+  customStyles = {},
 }: AIFlowCanvasProps) {
   React.useEffect(() => {
     // Set up global API keys if provided
@@ -89,14 +135,57 @@ export default function AIFlowCanvas({
     }
   }, [apiKeys, initialFlow]);
 
+  // Create the container styles with aggressive isolation if needed
+  const containerStyles: React.CSSProperties = {
+    width: '100%',
+    height: '100%',
+    maxHeight: '100%',
+    minHeight: '400px', // Minimum height for usability
+    display: 'block',
+    position: 'relative',
+    overflow: 'hidden', // Prevent scroll generation
+    boxSizing: 'border-box',
+    ...customStyles,
+    ...(forceIsolation && {
+      all: resetCSS as any,
+      boxSizing: 'border-box',
+      fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+      fontSize: '14px',
+      lineHeight: '1.5',
+      color: '#374151',
+      isolation: 'isolate',
+      overflow: 'hidden',
+    }),
+    ...style, // Legacy style prop override
+  };
+
+  // Temporarily disable AggressiveStyleIsolator to prevent Tailwind blocking
+  const IsolatorComponent = StyleIsolator; // forceIsolation ? AggressiveStyleIsolator : StyleIsolator;
+
   return (
-    <div className={`ai-flow-canvas ${className}`} style={style} data-theme={theme}>
-      <App 
-        onSave={onSave}
-        onExecute={onExecute}
-        readonly={readonly}
-      />
-      <Toaster position="top-right" />
-    </div>
+    <IsolatorComponent 
+      className={`ai-flow-canvas ${className}`} 
+      style={containerStyles}
+    >
+      <div 
+        data-theme={theme} 
+        style={{ 
+          width: '100%', 
+          height: '100%',
+          maxHeight: '100%',
+          display: 'block',
+          position: 'relative',
+          overflow: 'hidden',
+          boxSizing: 'border-box',
+        }}
+      >
+        <App 
+          onSave={onSave}
+          onExecute={onExecute}
+          readonly={readonly}
+        />
+        {showToaster && <Toaster position="top-right" />}
+      </div>
+    </IsolatorComponent>
   );
 }

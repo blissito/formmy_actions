@@ -1,17 +1,20 @@
 {
   "name": "formmy-actions",
   "private": false,
-  "version": "1.0.2",
+  "version": "1.0.8",
   "description": "Visual AI workflow builder as an embeddable React component",
   "type": "module",
   "main": "./dist/formmy-actions.umd.js",
   "module": "./dist/formmy-actions.es.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/formmy-actions.es.js",
       "require": "./dist/formmy-actions.umd.js"
     },
-    "./style.css": "./dist/style.css"
+    "./style.css": "./dist/style.css",
+    "./isolated.css": "./dist/isolated-styles.css"
   },
   "files": [
     "dist"
@@ -51,12 +54,14 @@
     "@types/js-yaml": "^4.0.9",
     "@xyflow/react": "^12.8.4",
     "ai": "^5.0.34",
+    "clsx": "^2.1.1",
     "js-yaml": "^4.1.0",
     "openai": "^5.19.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-hot-toast": "^2.6.0",
     "react-icons": "^5.5.0",
+    "tailwind-merge": "^3.3.1",
     "tsx": "^4.20.5"
   },
   "devDependencies": {

@@ -5,7 +5,7 @@
 **formmy-actions** es un componente React embebible para construcción de flujos de trabajo AI visuales. **Desarrollado originalmente para [formmy.app](https://formmy.app), ahora disponible como librería independiente en npm**.
 
 ### 📦 NPM Package Information
-- **Package**: `formmy-actions@1.0.1`
+- **Package**: `formmy-actions@1.0.4`
 - **NPM URL**: https://www.npmjs.com/package/formmy-actions
 - **Install**: `npm install formmy-actions`
 - **Status**: ✅ PUBLISHED & READY
@@ -15,7 +15,7 @@
 **IMPORTANTE**: Este sistema está diseñado como una **librería de componentes distribuidos**:
 - ✅ **Autocontenidos**: Cada componente funciona independientemente
 - ✅ **Embebible**: Se integra en cualquier aplicación React
-- ✅ **NPM Package**: Disponible como `formmy-actions@1.0.1`
+- ✅ **NPM Package**: Disponible como `formmy-actions@1.0.4`
 - ✅ **Microservicios**: Compatible con arquitecturas distribuidas
 
 ## 🎯 FASE 1 COMPLETADA ✅
@@ -33,6 +33,13 @@
 - **Layout profesional** con cards, headers con iconos gradientes
 - **Estados claros** (loading, error, success con animaciones)
 - **Detalles expandibles** para metadata y logs
+
+### ✨ **NUEVO: Sistema de Estilos Moderno v1.1**
+- **tailwind-merge + clsx**: Resolución automática de conflictos de clases
+- **Data attributes**: Targeting preciso para customización (`[data-execute-btn]`, `[data-sidebar]`, etc.)
+- **Una sola prop `className`**: Reemplaza múltiples props específicas
+- **Estándar shadcn/ui**: Compatibilidad total con el ecosistema actual
+- **Beta badge inline**: Movido junto al título, más sutil y professional
 
 ### 🔧 Base Técnica Sólida
 - **Arquitectura modular** con ejecutores por proveedor
@@ -74,6 +81,28 @@ export default function App() {
     console.log('Flow executed:', flowData);
   }}
   readonly={false}
+  showToaster={true}  // Control notificaciones toast
+/>
+```
+
+### 🎨 Customización de Estilos (v1.1)
+```tsx
+{/* Botón ejecutar en púrpura */}
+<AIFlowCanvas 
+  className="[&_[data-execute-btn]]:bg-purple-500 [&_[data-execute-btn]:hover]:bg-purple-600"
+  apiKeys={{ openai: 'your-key' }}
+/>
+
+{/* Sidebar oscuro */}
+<AIFlowCanvas 
+  className="[&_[data-sidebar]]:bg-gray-900 [&_[data-sidebar]]:text-white"
+  apiKeys={{ openai: 'your-key' }}
+/>
+
+{/* Múltiples customizaciones */}
+<AIFlowCanvas 
+  className="[&_[data-execute-btn]]:bg-red-500 [&_[data-node-item]]:border-blue-500 [&_[data-save-btn]]:bg-orange-500"
+  apiKeys={{ openai: 'your-key' }}
 />
 ```
 

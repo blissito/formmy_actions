@@ -9,6 +9,8 @@
 
 **An embeddable React Flow component** for building visual AI agent workflows. Originally developed for [formmy.app](https://formmy.app), now available as a standalone library.
 
+> 🎓 **Herramienta Educativa**: Este proyecto es una herramienta de aprendizaje creada para enseñar visualmente el funcionamiento de agentes de IA. Está diseñada como un ejercicio educativo para explorar y comprender la construcción de flujos de trabajo de IA de manera visual e interactiva.
+
 ## ✨ Features
 
 - 🎨 **Visual workflow builder** with drag & drop interface
@@ -93,6 +95,65 @@ import 'formmy-actions/style.css';
 />
 ```
 
+### Custom Styling with Tailwind
+
+```tsx
+{/* Change button colors */}
+<AIFlowCanvas 
+  className="[&_[data-execute-btn]]:bg-purple-500 [&_[data-execute-btn]:hover]:bg-purple-600"
+  apiKeys={{ openai: 'your-key' }}
+/>
+
+{/* Change sidebar background */}
+<AIFlowCanvas 
+  className="[&_[data-sidebar]]:bg-gray-100 [&_[data-sidebar]]:border-gray-300"
+  apiKeys={{ openai: 'your-key' }}
+/>
+
+{/* Multiple customizations */}
+<AIFlowCanvas 
+  className="[&_[data-execute-btn]]:bg-red-500 [&_[data-node-item]]:border-blue-500 [&_[data-save-btn]]:bg-orange-500"
+  apiKeys={{ openai: 'your-key' }}
+/>
+```
+
+**Available data attributes for styling:**
+- `[data-sidebar]`: The left sidebar container
+- `[data-execute-btn]`: The main execute button in sidebar
+- `[data-save-btn]`: The save button in top panel  
+- `[data-panel-execute-btn]`: The execute button in top panel
+- `[data-node-item]`: Individual draggable node items
+
+### Without Toast Notifications (for embedded use)
+
+```tsx
+<AIFlowCanvas 
+  apiKeys={{
+    openai: process.env.REACT_APP_OPENAI_API_KEY
+  }}
+  showToaster={false}
+  onSave={(flowData) => {
+    // Handle your own notifications
+    showMyCustomNotification('Flow saved!');
+  }}
+/>
+```
+
+### Style Isolation (prevents CSS conflicts)
+
+By default, formmy-actions uses isolated styles to prevent conflicts with your existing CSS. If you need additional isolation, you can also import the isolated stylesheet:
+
+```tsx
+import { AIFlowCanvas } from 'formmy-actions';
+import 'formmy-actions/style.css';          // Standard styles
+import 'formmy-actions/isolated.css';       // Additional isolation
+
+<AIFlowCanvas 
+  className="my-custom-wrapper"  // Your styles won't interfere
+  showToaster={false}
+/>
+```
+
 ### Full Configuration
 
 ```tsx
@@ -109,6 +170,7 @@ import 'formmy-actions/style.css';
     return Promise.resolve();
   }}
   readonly={false}
+  showToaster={true}
   className="my-flow-canvas"
   style={{ border: '1px solid #ccc' }}
 />
@@ -122,6 +184,7 @@ import 'formmy-actions/style.css';
 | `onSave` | `(flowData: any) => void` | `undefined` | Called when flow is saved |
 | `onExecute` | `(flowData: any) => Promise<any>` | `undefined` | Called after execution |
 | `readonly` | `boolean` | `false` | Whether canvas is read-only |
+| `showToaster` | `boolean` | `true` | Show toast notifications |
 | `className` | `string` | `""` | Additional CSS classes |
 | `style` | `React.CSSProperties` | `{}` | Inline styles |
 
@@ -163,7 +226,17 @@ The component includes all necessary CSS. Simply import the styles:
 import 'formmy-actions/style.css';
 ```
 
-Styles are scoped and won't conflict with your app's CSS.
+**Tailwind CSS Customization**: formmy-actions uses `tailwind-merge` for seamless style overrides. Use the `className` prop with data attribute selectors to customize specific parts:
+
+```tsx
+// Purple execute button
+<AIFlowCanvas className="[&_[data-execute-btn]]:bg-purple-500" />
+
+// Dark sidebar
+<AIFlowCanvas className="[&_[data-sidebar]]:bg-gray-900 [&_[data-sidebar]]:text-white" />
+```
+
+**Built-in Style Isolation**: Styles are automatically isolated and won't conflict with your app's CSS, even with aggressive CSS frameworks like Tailwind or Bootstrap.
 
 ## 🤖 AI Integration
 

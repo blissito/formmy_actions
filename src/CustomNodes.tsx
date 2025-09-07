@@ -15,8 +15,8 @@ import {
 } from "react-icons/fi";
 import { HiOutlineSparkles } from "react-icons/hi2";
 import { TbRobot } from "react-icons/tb";
-import { ModelService, type ModelInfo } from './services/modelService';
-import toast from 'react-hot-toast';
+import { ModelService, type ModelInfo } from "./services/modelService";
+import toast from "react-hot-toast";
 
 interface BaseCardProps {
   children: React.ReactNode;
@@ -37,7 +37,7 @@ function BaseCard({
 }: BaseCardProps) {
   return (
     <div
-      className={`min-w-[180px] p-4 ${bgGradient} border-2 ${borderColor} rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-200`}
+      className={`min-w-full p-4 ${bgGradient} border-2 ${borderColor} rounded-3xl shadow hover:shadow-2xl transition-all duration-200`}
     >
       {children}
       {hasTargetHandle && (
@@ -174,9 +174,9 @@ export function AgentNode({ data, id }: NodeProps) {
   const [availableModels, setAvailableModels] = React.useState<ModelInfo[]>([]);
   const [isLoadingModels, setIsLoadingModels] = React.useState(false);
   const { getNodes, setNodes, updateNodeData } = useReactFlow();
-  
+
   // Execution state
-  const executionStatus = data?.executionStatus || 'idle'; // idle, running, success, error
+  const executionStatus = data?.executionStatus || "idle"; // idle, running, success, error
 
   // Cargar configuración global desde localStorage
   const globalConfig = React.useMemo(() => {
@@ -196,16 +196,19 @@ export function AgentNode({ data, id }: NodeProps) {
   });
 
   // Helper function to update config and save to node data
-  const updateConfig = React.useCallback((newConfig: typeof config) => {
-    setConfig(newConfig);
-    // Guardar la configuración en los datos del nodo para que persista
-    updateNodeData(id, {
-      model: newConfig.model,
-      temperature: newConfig.temperature,
-      stream: newConfig.stream,
-      agentType: newConfig.agentType
-    });
-  }, [id, updateNodeData]);
+  const updateConfig = React.useCallback(
+    (newConfig: typeof config) => {
+      setConfig(newConfig);
+      // Guardar la configuración en los datos del nodo para que persista
+      updateNodeData(id, {
+        model: newConfig.model,
+        temperature: newConfig.temperature,
+        stream: newConfig.stream,
+        agentType: newConfig.agentType,
+      });
+    },
+    [id, updateNodeData]
+  );
 
   // Cargar modelos disponibles cuando se abre la configuración
   React.useEffect(() => {
@@ -214,58 +217,68 @@ export function AgentNode({ data, id }: NodeProps) {
       ModelService.getAvailableModels(
         globalConfig.openaiApiKey,
         globalConfig.anthropicApiKey
-      ).then((models) => {
-        setAvailableModels(models);
-        setIsLoadingModels(false);
-      }).catch((error) => {
-        console.warn('Error loading models:', error);
-        setIsLoadingModels(false);
-      });
+      )
+        .then((models) => {
+          setAvailableModels(models);
+          setIsLoadingModels(false);
+        })
+        .catch((error) => {
+          console.warn("Error loading models:", error);
+          setIsLoadingModels(false);
+        });
     }
-  }, [isConfigOpen, globalConfig.openaiApiKey, globalConfig.anthropicApiKey, isLoadingModels, availableModels.length]);
+  }, [
+    isConfigOpen,
+    globalConfig.openaiApiKey,
+    globalConfig.anthropicApiKey,
+    isLoadingModels,
+    availableModels.length,
+  ]);
 
   // Tools se determinan por las conexiones, no por configuración
   const hasToolsConnected = data?.toolsConnected || false;
 
   // Determinar el proveedor basado en el modelo seleccionado
-  const getProviderFromModel = (modelId: string): 'openai' | 'anthropic' | 'unknown' => {
-    if (modelId.includes('gpt-') || modelId.includes('GPT')) {
-      return 'openai';
+  const getProviderFromModel = (
+    modelId: string
+  ): "openai" | "anthropic" | "unknown" => {
+    if (modelId.includes("gpt-") || modelId.includes("GPT")) {
+      return "openai";
     }
-    if (modelId.includes('claude-') || modelId.includes('Claude')) {
-      return 'anthropic';
+    if (modelId.includes("claude-") || modelId.includes("Claude")) {
+      return "anthropic";
     }
-    return 'unknown';
+    return "unknown";
   };
 
   const currentProvider = getProviderFromModel(config.model);
-  
+
   // Colores según el proveedor
   const getProviderColors = () => {
     switch (currentProvider) {
-      case 'openai':
+      case "openai":
         return {
-          background: '#d1fae5', // green-100
-          border: 'border-green-400',
-          iconBg: 'from-green-500 to-emerald-500',
-          iconColor: 'text-green-600',
-          textColor: 'text-green-800'
+          background: "#d1fae5", // green-100
+          border: "border-green-400",
+          iconBg: "from-green-500 to-emerald-500",
+          iconColor: "text-green-600",
+          textColor: "text-green-800",
         };
-      case 'anthropic':
+      case "anthropic":
         return {
-          background: '#fef3c7', // amber-100  
-          border: 'border-amber-400',
-          iconBg: 'from-amber-500 to-orange-500',
-          iconColor: 'text-amber-600',
-          textColor: 'text-amber-800'
+          background: "#fef3c7", // amber-100
+          border: "border-amber-400",
+          iconBg: "from-amber-500 to-orange-500",
+          iconColor: "text-amber-600",
+          textColor: "text-amber-800",
         };
       default:
         return {
-          background: '#f3f4f6', // gray-100
-          border: 'border-gray-400',
-          iconBg: 'from-gray-500 to-slate-500',
-          iconColor: 'text-gray-600',
-          textColor: 'text-gray-800'
+          background: "#f3f4f6", // gray-100
+          border: "border-gray-400",
+          iconBg: "from-gray-500 to-slate-500",
+          iconColor: "text-gray-600",
+          textColor: "text-gray-800",
         };
     }
   };
@@ -274,25 +287,25 @@ export function AgentNode({ data, id }: NodeProps) {
 
   // Get status-based styling
   const getStatusStyling = () => {
-    if (executionStatus === 'running') {
+    if (executionStatus === "running") {
       return {
-        borderStyle: 'animate-pulse border-4 border-blue-400',
-        bgOverlay: 'absolute inset-0 bg-blue-100 bg-opacity-20 rounded-3xl'
+        borderStyle: "animate-pulse border-4 border-blue-400",
+        bgOverlay: "absolute inset-0 bg-blue-100 bg-opacity-20 rounded-3xl",
       };
-    } else if (executionStatus === 'success') {
+    } else if (executionStatus === "success") {
       return {
-        borderStyle: 'border-2 border-green-400',
-        bgOverlay: 'absolute inset-0 bg-green-100 bg-opacity-10 rounded-3xl'
+        borderStyle: "border-2 border-green-400",
+        bgOverlay: "absolute inset-0 bg-green-100 bg-opacity-10 rounded-3xl",
       };
-    } else if (executionStatus === 'error') {
+    } else if (executionStatus === "error") {
       return {
-        borderStyle: 'border-2 border-red-400',
-        bgOverlay: 'absolute inset-0 bg-red-100 bg-opacity-20 rounded-3xl'
+        borderStyle: "border-2 border-red-400",
+        bgOverlay: "absolute inset-0 bg-red-100 bg-opacity-20 rounded-3xl",
       };
     }
     return {
       borderStyle: `border-2 ${colors.border}`,
-      bgOverlay: ''
+      bgOverlay: "",
     };
   };
 
@@ -331,26 +344,37 @@ export function AgentNode({ data, id }: NodeProps) {
         onMouseLeave={() => setIsHovered(false)}
       >
         {/* Status overlay */}
-        {statusStyling.bgOverlay && <div className={statusStyling.bgOverlay}></div>}
+        {statusStyling.bgOverlay && (
+          <div className={statusStyling.bgOverlay}></div>
+        )}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <div className={`w-[30px] h-8 rounded-xl bg-gradient-to-br ${colors.iconBg} flex items-center justify-center text-white shadow-md relative`}>
+            <div
+              className={`w-[30px] h-8 rounded-xl bg-gradient-to-br ${colors.iconBg} flex items-center justify-center text-white shadow-md relative`}
+            >
               <TbRobot size={16} />
-              {executionStatus === 'running' && (
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full animate-pulse" 
-                     style={{animationDuration: '2s'}}></div>
+              {executionStatus === "running" && (
+                <div
+                  className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full animate-pulse"
+                  style={{ animationDuration: "2s" }}
+                ></div>
               )}
-              {executionStatus === 'success' && (
+              {executionStatus === "success" && (
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full"></div>
               )}
-              {executionStatus === 'error' && (
+              {executionStatus === "error" && (
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></div>
               )}
             </div>
             <div className={`${colors.textColor} font-bold text-sm`}>
               Agente IA
-              {executionStatus === 'running' && (
-                <span className="ml-1 text-amber-600 text-xs animate-pulse" style={{animationDuration: '1.5s'}}>(pensando...)</span>
+              {executionStatus === "running" && (
+                <span
+                  className="ml-1 text-amber-600 text-xs animate-pulse"
+                  style={{ animationDuration: "1.5s" }}
+                >
+                  (pensando...)
+                </span>
               )}
             </div>
           </div>
@@ -376,7 +400,12 @@ export function AgentNode({ data, id }: NodeProps) {
         </div>
 
         {isConfigOpen && (
-          <div className={`mb-3 p-3 bg-white/60 rounded-2xl border ${colors.border.replace('border-', 'border-')} space-y-2`}>
+          <div
+            className={`mb-3 p-3 bg-white/60 rounded-2xl border ${colors.border.replace(
+              "border-",
+              "border-"
+            )} space-y-2`}
+          >
             <div>
               <label className={`text-xs ${colors.textColor} font-medium`}>
                 Modelo:
@@ -510,7 +539,9 @@ export function AgentNode({ data, id }: NodeProps) {
         type="target"
         position={Position.Left}
         id="tools"
-        className={`w-4 h-4 border-2 border-white shadow-md ${hasToolsConnected ? "bg-orange-500" : "bg-gray-300"}`}
+        className={`w-4 h-4 border-2 border-white shadow-md ${
+          hasToolsConnected ? "bg-orange-500" : "bg-gray-300"
+        }`}
         style={{
           backgroundColor: hasToolsConnected ? "#f97316" : "#d1d5db",
           top: "70%",
@@ -540,26 +571,27 @@ export function OutputNode({ data }: NodeProps) {
     // If we have a result, show it
     if (result) {
       // If result is a string, return it directly
-      if (typeof result === 'string') {
+      if (typeof result === "string") {
         return result;
       }
-      
+
       // If result is an object, try to get the response/text
-      if (typeof result === 'object') {
-        const resultText = result.response || result.text || result.output || result.message;
-        if (resultText && typeof resultText === 'string') {
+      if (typeof result === "object") {
+        const resultText =
+          result.response || result.text || result.output || result.message;
+        if (resultText && typeof resultText === "string") {
           return resultText;
         }
-        
+
         // If no specific text field, stringify the object (but nicely formatted)
         return JSON.stringify(result, null, 2);
       }
     }
-    
+
     // Show status-based message when no result
-    if (executionStatus === 'running') {
+    if (executionStatus === "running") {
       return "Generando respuesta...";
-    } else if (executionStatus === 'error') {
+    } else if (executionStatus === "error") {
       return "Error en la ejecución";
     } else {
       return "Tu mensaje aparecerá aquí...";
@@ -567,19 +599,28 @@ export function OutputNode({ data }: NodeProps) {
   };
 
   const hasResult = result !== null && result !== undefined;
-  const executionStatus = data?.executionStatus || 'idle';
+  const executionStatus = data?.executionStatus || "idle";
 
   const renderLogs = () => {
-    if (!isExpanded || !data?.logs || !Array.isArray(data.logs) || data.logs.length === 0) {
+    if (
+      !isExpanded ||
+      !data?.logs ||
+      !Array.isArray(data.logs) ||
+      data.logs.length === 0
+    ) {
       return null;
     }
 
     return (
       <div className="mt-2 pt-2 border-t border-gray-200">
         <div className="text-[10px] text-gray-500 font-mono">
-          <div><strong>Logs de ejecución:</strong></div>
+          <div>
+            <strong>Logs de ejecución:</strong>
+          </div>
           {data.logs.map((log: any, i: number) => (
-            <div key={i} className="py-0.5">{String(log)}</div>
+            <div key={i} className="py-0.5">
+              {String(log)}
+            </div>
           ))}
         </div>
       </div>
@@ -589,35 +630,35 @@ export function OutputNode({ data }: NodeProps) {
   // Get background color based on execution status
   const getBackgroundColor = () => {
     switch (executionStatus) {
-      case 'success':
-        return 'bg-green-50'; // Light green when successful
-      case 'error':
-        return 'bg-red-50'; // Light red when error
-      case 'running':
-        return 'bg-blue-50'; // Light blue when running
+      case "success":
+        return "bg-green-50"; // Light green when successful
+      case "error":
+        return "bg-red-50"; // Light red when error
+      case "running":
+        return "bg-blue-50"; // Light blue when running
       default:
-        return 'bg-green-100'; // Default green
+        return "bg-green-100"; // Default green
     }
   };
 
   const getBorderColor = () => {
     switch (executionStatus) {
-      case 'error':
-        return 'border-red-400';
-      case 'running':
-        return 'border-blue-400 animate-pulse';
+      case "error":
+        return "border-red-400";
+      case "running":
+        return "border-blue-400 animate-pulse";
       default:
-        return 'border-green-400';
+        return "border-green-400";
     }
   };
 
   const handleCopy = async () => {
     if (!result) return;
-    
+
     try {
       // Handle different result formats: string directly, or object with response/text properties
-      let textToCopy = '';
-      if (typeof result === 'string') {
+      let textToCopy = "";
+      if (typeof result === "string") {
         textToCopy = result;
       } else if (result?.response) {
         textToCopy = result.response;
@@ -626,47 +667,55 @@ export function OutputNode({ data }: NodeProps) {
       } else {
         textToCopy = JSON.stringify(result, null, 2);
       }
-      
+
       await navigator.clipboard.writeText(textToCopy);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-      
+
       // Show success toast
-      toast.success('¡Resultado copiado al portapapeles! 📋', {
+      toast.success("¡Resultado copiado al portapapeles! 📋", {
         duration: 2000,
-        icon: '📋',
+        icon: "📋",
       });
     } catch (error) {
-      console.error('Error copying to clipboard:', error);
-      toast.error('Error al copiar al portapapeles');
+      console.error("Error copying to clipboard:", error);
+      toast.error("Error al copiar al portapapeles");
     }
   };
 
   return (
     <>
-      <div className={`min-w-[320px] max-w-[500px] ${getBackgroundColor()} border-2 ${getBorderColor()} rounded-xl shadow-lg transition-all duration-200`}>
+      <div
+        className={`min-w-[320px] max-w-[500px] ${getBackgroundColor()} border-2 ${getBorderColor()} rounded-xl shadow-xl transition-all duration-200`}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 pb-3 border-b border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-md">
-              {executionStatus === 'error' ? (
+        <div className="flex items-center justify-between p-4 pb-3 w-[500px]">
+          <div className="flex items-center gap-3 ">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-2xl">
+              {executionStatus === "error" ? (
                 <span className="text-white text-sm">❌</span>
-              ) : executionStatus === 'running' ? (
+              ) : executionStatus === "running" ? (
                 <span className="text-white text-sm animate-spin">⏳</span>
               ) : (
                 <HiOutlineSparkles className="text-white" size={18} />
               )}
             </div>
-            <div>
+            <div className="">
               <h3 className="text-sm font-semibold text-gray-800">Resultado</h3>
-              <div className={`text-xs ${
-                executionStatus === 'error' ? 'text-red-600' : 
-                executionStatus === 'running' ? 'text-blue-600' : 
-                'text-green-600'
-              }`}>
-                {executionStatus === 'error' ? 'Error en la ejecución' : 
-                 executionStatus === 'running' ? 'Procesando...' : 
-                 'Completado'}
+              <div
+                className={`text-xs ${
+                  executionStatus === "error"
+                    ? "text-red-600"
+                    : executionStatus === "running"
+                    ? "text-blue-600"
+                    : "text-green-600"
+                }`}
+              >
+                {executionStatus === "error"
+                  ? "Error en la ejecución"
+                  : executionStatus === "running"
+                  ? "Procesando..."
+                  : "Completado"}
               </div>
             </div>
           </div>
@@ -697,32 +746,33 @@ export function OutputNode({ data }: NodeProps) {
             </div>
           )}
         </div>
-
         {/* Main Content */}
         <div className="p-4">
           {/* Result Display */}
-          <div className={`bg-white rounded-lg border border-gray-200 ${
-            hasResult ? 'min-h-[120px]' : 'min-h-[80px]'
-          } p-4 mb-3 shadow-sm`}>
+          <div
+            className={`bg-white rounded-lg border border-gray-200 ${
+              hasResult ? "min-h-[120px]" : "min-h-[80px]"
+            } p-4 mb-3 shadow-sm`}
+          >
             <div className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-green-500"></span>
               Respuesta
             </div>
-            <div className={`text-sm text-gray-800 leading-relaxed ${
-              !hasResult ? 'text-gray-500 italic' : ''
-            }`}>
+            <div
+              className={`text-sm text-gray-800 leading-relaxed ${
+                !hasResult ? "text-gray-500 italic" : ""
+              }`}
+            >
               {hasResult ? (
-                <div className="whitespace-pre-wrap">
-                  {getResultText()}
-                </div>
+                <div className="whitespace-pre-wrap">{getResultText()}</div>
               ) : (
                 <div className="flex items-center justify-center py-8 text-gray-400">
-                  {executionStatus === 'running' ? (
+                  {executionStatus === "running" ? (
                     <div className="flex items-center gap-2">
                       <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
                       <span>Generando respuesta...</span>
                     </div>
-                  ) : executionStatus === 'error' ? (
+                  ) : executionStatus === "error" ? (
                     <div className="flex items-center gap-2 text-red-500">
                       <span>❌</span>
                       <span>Error en la ejecución</span>
@@ -740,12 +790,27 @@ export function OutputNode({ data }: NodeProps) {
             <div className="space-y-3">
               {/* Metadata */}
               <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                <div className="text-xs font-medium text-gray-600 mb-2">Información de Ejecución</div>
+                <div className="text-xs font-medium text-gray-600 mb-2">
+                  Información de Ejecución
+                </div>
                 <div className="text-xs text-gray-500 space-y-1">
-                  <div>Estado: <span className="font-mono">{executionStatus}</span></div>
-                  <div>Timestamp: <span className="font-mono">{result?.execution_info?.timestamp || new Date().toISOString()}</span></div>
+                  <div>
+                    Estado: <span className="font-mono">{executionStatus}</span>
+                  </div>
+                  <div>
+                    Timestamp:{" "}
+                    <span className="font-mono">
+                      {result?.execution_info?.timestamp ||
+                        new Date().toISOString()}
+                    </span>
+                  </div>
                   {result?.tokens && (
-                    <div>Tokens: <span className="font-mono">{result.tokens.total || 0}</span></div>
+                    <div>
+                      Tokens:{" "}
+                      <span className="font-mono">
+                        {result.tokens.total || 0}
+                      </span>
+                    </div>
                   )}
                 </div>
               </div>
@@ -755,7 +820,6 @@ export function OutputNode({ data }: NodeProps) {
             </div>
           )}
         </div>
-        
         {/* Handle inside the main div */}
         <Handle
           type="target"
@@ -770,7 +834,7 @@ export function OutputNode({ data }: NodeProps) {
 }
 
 // Nodo Prompt personalizado
-export function PromptNode({ }: NodeProps) {
+export function PromptNode({}: NodeProps) {
   return (
     <div className="min-w-[180px] p-4 bg-gradient-to-br from-purple-50 to-violet-100 border-2 border-purple-400 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-200">
       <div className="text-center mb-3">
@@ -799,7 +863,7 @@ export function PromptNode({ }: NodeProps) {
 }
 
 // Nodo Function personalizado
-export function FunctionNode({ }: NodeProps) {
+export function FunctionNode({}: NodeProps) {
   return (
     <BaseCard
       bgGradient="bg-gradient-to-br from-red-50 to-pink-100"

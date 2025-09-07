@@ -10,9 +10,31 @@ html, body {
   margin: 0;
   padding: 0;
   font-family: system-ui, -apple-system, sans-serif;
-  overflow: hidden;
-  height: 100vh;
+  overflow: auto;
+  min-height: 100vh;
   width: 100vw;
+}
+
+/* Example component specific styles */
+.example-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.example-header {
+  margin-bottom: 20px;
+}
+
+.example-canvas {
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.example-info {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
 }
 
 /* Remove React Flow default styles */

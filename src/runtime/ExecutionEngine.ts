@@ -1,6 +1,6 @@
 import type { Node, Edge } from '@xyflow/react';
 
-export type RuntimeType = 'vercel-ai' | 'langchain' | 'typescript' | 'custom';
+export type RuntimeType = 'vercel-ai' | 'langchain' | 'typescript' | 'custom' | 'ffmpeg' | 'image-generator';
 
 export interface ExecutionContext {
   nodeId: string;
@@ -261,6 +261,24 @@ export class ExecutionEngine {
       console.log('✅ Registered VercelAI executor');
     }).catch(error => {
       console.warn('⚠️ Failed to register VercelAI executor:', error);
+    });
+    
+    // Register FFmpeg executor
+    import('../tools/FFmpegTool').then(({ FFmpegExecutor }) => {
+      const ffmpegExecutor = new FFmpegExecutor();
+      this.registerExecutor(ffmpegExecutor);
+      console.log('✅ Registered FFmpeg executor');
+    }).catch(error => {
+      console.warn('⚠️ Failed to register FFmpeg executor:', error);
+    });
+    
+    // Register Image Generator executor
+    import('../tools/ImageGeneratorTool').then(({ ImageGeneratorExecutor }) => {
+      const imageExecutor = new ImageGeneratorExecutor();
+      this.registerExecutor(imageExecutor);
+      console.log('✅ Registered ImageGenerator executor');
+    }).catch(error => {
+      console.warn('⚠️ Failed to register ImageGenerator executor:', error);
     });
   }
 }

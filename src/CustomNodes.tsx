@@ -566,6 +566,40 @@ export function OutputNode({ data }: NodeProps) {
     }
   }, [data?.result, data?.executionStatus]);
 
+  // Check if result contains a video file path or URL
+  const isVideoResult = () => {
+    if (!result) return false;
+    
+    const resultText = getResultText();
+    if (typeof resultText !== "string") return false;
+    
+    // Check for video file extensions
+    const videoExtensions = ['.mp4', '.webm', '.ogg', '.avi', '.mov', '.wmv', '.flv', '.mkv'];
+    const lowerText = resultText.toLowerCase();
+    
+    return videoExtensions.some(ext => lowerText.includes(ext)) ||
+           lowerText.includes('video') ||
+           lowerText.match(/https?:\/\/.*\.(mp4|webm|ogg|avi|mov|wmv|flv|mkv)/i);
+  };
+
+  // Extract video URL/path from result
+  const getVideoUrl = () => {
+    if (!result) return null;
+    
+    const resultText = getResultText();
+    if (typeof resultText !== "string") return null;
+    
+    // Try to extract URL pattern
+    const urlMatch = resultText.match(/https?:\/\/[^\s]+\.(mp4|webm|ogg|avi|mov|wmv|flv|mkv)/i);
+    if (urlMatch) return urlMatch[0];
+    
+    // Try to extract file path pattern
+    const pathMatch = resultText.match(/[^\s]*\.(mp4|webm|ogg|avi|mov|wmv|flv|mkv)/i);
+    if (pathMatch) return pathMatch[0];
+    
+    return null;
+  };
+
   // Get the result text to show in the main textarea
   const getResultText = () => {
     // If we have a result, show it
@@ -764,7 +798,30 @@ export function OutputNode({ data }: NodeProps) {
               }`}
             >
               {hasResult ? (
-                <div className="whitespace-pre-wrap">{getResultText()}</div>
+                <>
+                  {/* Show video player if result contains a video */}
+                  {isVideoResult() && getVideoUrl() && (
+                    <div className="mb-4">
+                      <div className="text-xs text-gray-600 mb-2 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                        Video generado
+                      </div>
+                      <video
+                        controls
+                        className="w-full rounded-lg border border-gray-300 shadow-sm"
+                        style={{ maxHeight: '300px' }}
+                      >
+                        <source src={getVideoUrl()} />
+                        Tu navegador no soporta la reproducción de video.
+                      </video>
+                      <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-600 border border-gray-200">
+                        <strong>Ruta del archivo:</strong> {getVideoUrl()}
+                      </div>
+                    </div>
+                  )}
+                  {/* Show the full text result */}
+                  <div className="whitespace-pre-wrap">{getResultText()}</div>
+                </>
               ) : (
                 <div className="flex items-center justify-center py-8 text-gray-400">
                   {executionStatus === "running" ? (

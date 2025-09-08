@@ -32,8 +32,11 @@ import {
   FunctionNode,
   ToolNode,
 } from "./CustomNodes";
+import { FFmpegNode } from "./tools/FFmpegTool";
+import { ImageGeneratorNode } from "./tools/ImageGeneratorTool";
 import { GlobalSettings, useGlobalConfig } from "./components/GlobalSettings";
 import { ExecutionEngine } from "./runtime/ExecutionEngine";
+import { FlowExporter } from "./tools/FlowExporter";
 import {
   FiEdit,
   FiFileText,
@@ -45,8 +48,12 @@ import {
 import { HiOutlineSparkles } from "react-icons/hi2";
 import { RiRobot2Line } from "react-icons/ri";
 import InlineBetaBadge from "./InlineBetaBadge";
+import FrameworkSidebar from "./components/FrameworkSidebar";
 
 import { cn } from './utils/cn';
+
+// Initialize executors
+import './runtime/ExecutorRegistry';
 
 // Tipos de nodos disponibles para arrastrar
 const nodeTypes = [
@@ -91,6 +98,26 @@ const nodeTypes = [
     textColor: "text-purple-800",
   },
   {
+    type: "ffmpeg",
+    icon: FiZap,
+    title: "FFmpeg Video",
+    description: "Crear videos con FFmpeg",
+    gradient: "from-purple-500 to-purple-600",
+    bgColor: "bg-gradient-to-br from-purple-50 to-purple-100",
+    borderColor: "border-purple-400",
+    textColor: "text-purple-800",
+  },
+  {
+    type: "imageGenerator",
+    icon: HiOutlineSparkles,
+    title: "Generador de Imágenes",
+    description: "Genera imágenes con AI",
+    gradient: "from-indigo-500 to-indigo-600",
+    bgColor: "bg-gradient-to-br from-indigo-50 to-indigo-100",
+    borderColor: "border-indigo-400",
+    textColor: "text-indigo-800",
+  },
+  {
     type: "function",
     icon: FiZap,
     title: "Función Personalizada",
@@ -120,6 +147,8 @@ const customNodeTypes = {
   prompt: PromptNode,
   function: FunctionNode,
   tool: ToolNode,
+  ffmpeg: FFmpegNode,
+  imageGenerator: ImageGeneratorNode,
 };
 
 let id = 0;
@@ -242,10 +271,12 @@ function FlowCanvas({
   const onDragStart = (
     event: DragEvent,
     nodeType: string,
+    framework?: string,
     componentInfo?: any
   ) => {
     const dragData = {
       nodeType,
+      framework: framework || 'legacy', // Default to legacy for old nodes
       componentInfo: componentInfo || null,
     };
     event.dataTransfer.setData(
@@ -303,7 +334,7 @@ function FlowCanvas({
           },
         };
       } else {
-        // Built-in component
+        // Built-in component or framework tool
         const nodeTypeConfig = nodeTypes.find(
           (nt) => nt.type === dragData.nodeType
         );
@@ -313,6 +344,8 @@ function FlowCanvas({
           position,
           data: {
             label: nodeTypeConfig ? nodeTypeConfig.title : dragData.nodeType,
+            framework: dragData.framework || 'legacy', // Store framework info
+            toolId: dragData.nodeType, // Store tool ID for new framework tools
           },
         };
       }
@@ -599,104 +632,15 @@ function FlowCanvas({
 
   return (
     <div className="flex w-screen h-screen bg-gray-50">
-      {/* Sidebar */}
-      <div
-        data-sidebar
-        className="w-72 min-w-72 max-w-72 flex-shrink-0 bg-white border-r border-gray-200 shadow-lg z-20 flex flex-col max-h-screen"
-        style={{ maxWidth: "288px" }}
-      >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h3 className="text-lg font-bold text-gray-800 flex items-center">
-            Paleta de Nodos
-            <InlineBetaBadge />
-          </h3>
-          <button
-            onClick={() => setShowGlobalSettings(true)}
-            className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
-            title="Variables Globales"
-          >
-            <FiSettings size={16} />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-4 py-2">
-          {/* Botón Ejecutar Flujo */}
-          <div className="mb-6">
-            <button
-              data-execute-btn
-              onClick={executeFlow}
-              disabled={isExecuting}
-              className={cn(
-                "w-full py-3 px-4 rounded-xl font-bold text-white transition-all duration-200 flex items-center justify-center gap-2",
-                isExecuting
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
-              )}
-            >
-              <FiPlay size={16} />
-              {isExecuting ? "Ejecutando..." : "Ejecutar Flujo"}
-            </button>
-
-            {executionResult && (
-              <div className="mt-3 p-3 bg-gray-50 rounded-lg text-xs">
-                <div className="font-bold text-gray-700 mb-2">
-                  Estado: {executionResult.status}
-                </div>
-                {executionLogs.length > 0 && (
-                  <div className="max-h-32 overflow-y-auto">
-                    {executionLogs.slice(-5).map((log, i) => (
-                      <div key={i} className="text-gray-600 text-[10px] py-1">
-                        {log}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-          <div className="flex flex-col gap-4">
-            {nodeTypes.map((nodeType) => (
-              <div
-                key={nodeType.type}
-                data-node-item
-                className="w-full h-20 bg-white border border-gray-300 rounded-2xl shadow-sm hover:shadow-md hover:border-gray-400 cursor-grab active:cursor-grabbing transition-all flex items-center p-4"
-                draggable
-                onDragStart={(event) => onDragStart(event, nodeType.type)}
-              >
-                <div
-                  className={`
-
-                  w-[40px] h-10 rounded-xl bg-gradient-to-br ${nodeType.gradient} flex items-center justify-center text-white shadow-sm flex-shrink-0 pr-6`}
-                >
-                  <nodeType.icon size={16} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div
-                    className={`font-semibold text-sm ${nodeType.textColor} truncate mb-1`}
-                  >
-                    {nodeType.title}
-                  </div>
-                  <div className="text-gray-400 text-[10px] truncate">
-                    {nodeType.description}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Instructions */}
-          <div className="mt-8 p-5 bg-gray-50 rounded-2xl shadow-sm">
-            <h4 className="font-semibold text-xs text-gray-700 mb-3">
-              💡 Cómo usar:
-            </h4>
-            <ul className="text-[12px] text-gray-600 space-y-2">
-              <li> Arrastra nodos al canvas</li>
-              <li> Conecta izquierda → derecha</li>
-              <li> Ajuste automático a la cuadrícula</li>
-            </ul>
-          </div>
-        </div>
-      </div>
+      {/* New Framework-based Sidebar */}
+      <FrameworkSidebar
+        isExecuting={isExecuting}
+        onExecuteFlow={executeFlow}
+        onShowGlobalSettings={() => setShowGlobalSettings(true)}
+        onDragStart={onDragStart}
+        executionResult={executionResult}
+        executionLogs={executionLogs}
+      />
 
       {/* Main Canvas */}
       <div
@@ -780,6 +724,42 @@ function FlowCanvas({
                 Guardar
               </button>
 
+              {/* Botón Exportar */}
+              <button
+                className="bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 font-medium transition-all hover:shadow-lg"
+                onClick={() => {
+                  FlowExporter.downloadFlow(nodes, edges, 'yaml', `flow-${new Date().toISOString().split('T')[0]}.yaml`);
+                  toast.success('Flow exported successfully!');
+                }}
+              >
+                <FiSave size={16} />
+                Exportar
+              </button>
+
+              {/* Botón Importar */}
+              <label className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 font-medium transition-all hover:shadow-lg cursor-pointer">
+                <FiFileText size={16} />
+                Importar
+                <input
+                  type="file"
+                  accept=".yaml,.yml,.json"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      try {
+                        const { nodes: importedNodes, edges: importedEdges } = await FlowExporter.loadFlowFromFile(file);
+                        setNodes(importedNodes);
+                        setEdges(importedEdges);
+                        toast.success('Flow imported successfully!');
+                      } catch (error) {
+                        toast.error('Failed to import flow');
+                      }
+                    }
+                  }}
+                />
+              </label>
+
               {/* Botón Ejecutar */}
               <button
                 data-panel-execute-btn
@@ -803,7 +783,7 @@ function FlowCanvas({
         onSave={saveGlobalConfig}
       />
 
-      {/* Toast notifications */}
+      {/* Toast notifications handled by AIFlowCanvas 
       <Toaster
         position="top-center"
         toastOptions={{
@@ -826,7 +806,7 @@ function FlowCanvas({
             },
           },
         }}
-      />
+      /> */}
     </div>
   );
 }

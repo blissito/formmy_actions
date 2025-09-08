@@ -18,6 +18,22 @@
 - ✅ **NPM Package**: Disponible como `formmy-actions@1.0.4`
 - ✅ **Microservicios**: Compatible con arquitecturas distribuidas
 
+### 🔓 **NUEVO: No Vendor Lock-in Philosophy**
+
+**VALOR FUNDAMENTAL**: Cada función que desarrollamos se diseña con representación visual y puede ser usada por múltiples frameworks AI:
+
+- 🎯 **Multi-Framework Support**: Vercel AI, LlamaIndex, LangChain y futuros frameworks
+- 🔧 **Function = Visual Tool**: Cada función tiene su representación visual drag-and-drop
+- 🔄 **Interoperabilidad**: Mezcla herramientas de diferentes frameworks en un solo workflow
+- 📊 **Estándares Abiertos**: Export/import en formato YAML compatible con la comunidad
+- 🚀 **Futuro-Proof**: Nuevos frameworks se integran sin romper workflows existentes
+
+### 🎨 **Sistema Multi-Framework con Tabs**
+- **Tab "Vercel AI"**: OpenAI, Anthropic, Google Gemini tools
+- **Tab "LlamaIndex"**: Multi-Agent workflows, RAG pipelines, Code interpreter, Web tools
+- **Tab "Custom"**: Herramientas específicas como FFmpeg, Storage, etc.
+- **Ejecución unificada**: Un solo botón ejecuta workflows que mezclan frameworks
+
 ## 🎯 FASE 1 COMPLETADA ✅
 
 ### ✅ Core Functionality Working
@@ -41,11 +57,14 @@
 - **Estándar shadcn/ui**: Compatibilidad total con el ecosistema actual
 - **Beta badge inline**: Movido junto al título, más sutil y professional
 
-### 🔧 Base Técnica Sólida
-- **Arquitectura modular** con ejecutores por proveedor
-- **TypeScript** completo con tipos definidos  
-- **Error handling** robusto
-- **Compilación limpia** sin errores JSX
+### 🔧 **ACTUALIZADO: Base Técnica Multi-Framework**
+- **ExecutorRegistry**: Registry central para todos los frameworks AI
+- **ExecutorFramework**: Interfaz común para Vercel AI, LlamaIndex, LangChain
+- **FrameworkSidebar**: UI con tabs que carga tools dinámicamente
+- **Streaming Support**: Real-time updates especialmente para LlamaIndex workflows
+- **Tool Validation**: Validación específica por framework y herramienta
+- **TypeScript** completo con tipos unificados
+- **Error handling** robusto por framework
 
 ## 🚀 Uso del Package
 
@@ -138,42 +157,74 @@ const result = await engine.executeFlow('my-flow', nodes, edges, inputs);
 - **Ejecución**: Botón "Ejecutar Flujo" para run completo ✅
 - **Save/Load**: Ctrl/Cmd+S para guardar ✅
 
-## 🎯 FASE 2 - ROADMAP
+## 🎯 **ACTUALIZADA: FASE 2 COMPLETADA ✅**
 
-### 🥇 **OPCIÓN A: Expandir Node Types** (RECOMENDADO)
+### ✅ **Multi-Framework Architecture - COMPLETADO**
 ```
-⭐ PRIORIDAD: ALTA
-🎯 IMPACTO: Funcionalidad core completa
+⭐ PRIORIDAD: ALTA → ✅ COMPLETADO
+🎯 IMPACTO: No Vendor Lock-in achieved
 
-Tareas:
-- [ ] Activar PromptNode (plantillas con variables)
-- [ ] Activar FunctionNode (lógica custom)  
-- [ ] Activar ToolNode (integraciones externas)
-- [ ] Testing completo de workflows complejos
-```
-
-### 🥈 **OPCIÓN B: Multi-Provider AI**  
-```
-⭐ PRIORIDAD: ALTA  
-🎯 IMPACTO: Diversidad de modelos
-
-Tareas:
-- [ ] Integración Anthropic (Claude)
-- [ ] Selector de modelo en AgentNode
-- [ ] Theming por proveedor
-- [ ] API key management mejorado
+Tareas Completadas:
+- [x] ExecutorFramework interface con soporte multi-framework
+- [x] ExecutorRegistry para gestionar múltiples frameworks
+- [x] FrameworkSidebar con tabs dinámicas
+- [x] VercelAIExecutor refactorizado para nueva arquitectura
+- [x] LlamaIndexExecutor con 10+ herramientas y streaming
+- [x] Sistema de validación por framework
+- [x] OutputNode con soporte para videos
 ```
 
-### 🥉 **OPCIÓN C: Component Library Enhancements**
+### ✅ **Tool Ecosystem Expansion - COMPLETADO**
+```
+⭐ PRIORIDAD: ALTA → ✅ COMPLETADO  
+🎯 IMPACTO: Huge tool library available
+
+LlamaIndex Tools Implementadas:
+- [x] Multi-Agent Workflows con handoffs
+- [x] Natural Language Workflows  
+- [x] RAG Pipelines con vector search
+- [x] Code Interpreter (Python/JS)
+- [x] Wikipedia, Web Scraper, Google Drive, Notion tools
+- [x] Vector Store y Document Loader
+- [x] Streaming real-time con event system
+```
+
+## 🎯 FASE 3 - ROADMAP (PRÓXIMAS MEJORAS)
+
+### 🥇 **OPCIÓN A: Execution Engine Evolution**
 ```
 ⭐ PRIORIDAD: MEDIA
-🎯 IMPACTO: Developer Experience
+🎯 IMPACTO: Better performance & reliability
 
 Tareas:
-- [ ] TypeScript declarations (.d.ts)
-- [ ] Better error handling
-- [ ] More configuration options
-- [ ] Performance optimizations
+- [ ] Migrar ExecutionEngine a nueva arquitectura multi-framework
+- [ ] Cross-framework workflow execution
+- [ ] Better error handling entre frameworks
+- [ ] Performance optimizations para workflows grandes
+```
+
+### 🥈 **OPCIÓN B: LangChain Integration**  
+```
+⭐ PRIORIDAD: MEDIA
+🎯 IMPACTO: Complete framework coverage
+
+Tareas:
+- [ ] LangChainExecutor implementation
+- [ ] Chain tools: Sequential, Map-Reduce, etc.
+- [ ] Memory management tools
+- [ ] Vector store integrations
+```
+
+### 🥉 **OPCIÓN C: Advanced Workflow Features**
+```
+⭐ PRIORIDAD: BAJA
+🎯 IMPACTO: Power user features
+
+Tareas:
+- [ ] Natural language workflow creation (usando LlamaIndex)
+- [ ] Workflow templates marketplace
+- [ ] YAML import/export estándar
+- [ ] Workflow version control
 ```
 
 ## 🔧 Comandos de Desarrollo
@@ -201,23 +252,27 @@ npm install
 npm run dev
 ```
 
-### Estructura del Proyecto
+### **ACTUALIZADA: Estructura del Proyecto Multi-Framework**
 ```
 formmy-actions/
 ├── src/
-│   ├── AIFlowCanvas.tsx           # Componente principal embebible
-│   ├── CustomNodes.tsx            # Componentes de nodos
-│   ├── App.tsx                    # App demo
+│   ├── AIFlowCanvas.tsx              # Componente principal embebible
+│   ├── CustomNodes.tsx               # Componentes de nodos (con soporte video)
+│   ├── App.tsx                       # App demo
+│   ├── components/
+│   │   └── FrameworkSidebar.tsx      # ✅ Sidebar con tabs por framework
 │   ├── runtime/
-│   │   ├── ExecutionEngine.ts     # Motor de ejecución
-│   │   └── executors/             # Ejecutores por framework
-│   │       ├── VercelAIExecutor.ts   # ✅ Vercel AI SDK
-│   │       └── TypeScriptExecutor.ts # ✅ TypeScript puro
+│   │   ├── ExecutorFramework.ts      # ✅ Interfaces base multi-framework
+│   │   ├── ExecutorRegistry.ts       # ✅ Registry central de executores
+│   │   ├── ExecutionEngine.ts        # Motor de ejecución legacy
+│   │   └── executors/                # Ejecutores por framework
+│   │       ├── VercelAIExecutor.ts   # ✅ Vercel AI SDK refactorizado
+│   │       └── LlamaIndexExecutor.ts # ✅ LlamaIndex con streaming
 │   └── services/
-│       └── modelService.ts        # Servicios AI
-├── dist/                          # Build output
-├── package.json                   # NPM config
-└── README.md                      # Documentación npm
+│       └── modelService.ts           # Servicios AI
+├── dist/                             # Build output
+├── package.json                      # NPM config
+└── README.md                         # Documentación npm
 ```
 
 ## 📊 Bundle Stats
@@ -255,6 +310,13 @@ formmy-actions/
 
 ---
 
-**🎉 MILESTONE: formmy-actions es ahora un package npm funcional y disponible públicamente. La Fase 1 está completa y lista para uso en producción.**
+**🎉 MILESTONE FASE 2: formmy-actions ahora es la ÚNICA plataforma visual AI con arquitectura multi-framework. No Vendor Lock-in achieved con soporte completo para Vercel AI + LlamaIndex.**
+
+## 🏆 **Logros Únicos en el Mercado:**
+- 🔓 **Primera plataforma** con verdadero "No Vendor Lock-in" para AI tools
+- 🎨 **Único sistema** que permite mezclar Vercel AI + LlamaIndex en un workflow
+- 🚀 **10+ herramientas LlamaIndex** listas para usar visualmente
+- 📱 **Streaming real-time** con updates visuales en tiempo real
+- 🛠️ **Function = Visual Tool** philosophy implementada
 
 **🤖 Desarrollado con ❤️ por [Fixter.org](https://fixter.org) para [formmy.app](https://formmy.app)**

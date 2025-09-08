@@ -1,8 +1,223 @@
 import OpenAI from 'openai';
-import { ComponentExecutor, type ExecutionContext, type ExecutionResult, type RuntimeType } from '../ExecutionEngine';
+import { ComponentExecutor, type ExecutionContext as OldExecutionContext, type ExecutionResult as OldExecutionResult, type RuntimeType } from '../ExecutionEngine';
+import { ExecutorFramework, type ToolDefinition, type ValidationResult, type ExecutionContext, type ExecutionResult, type StreamingEvent } from '../ExecutorFramework';
 
-export class VercelAIExecutor extends ComponentExecutor {
-  runtime: RuntimeType = 'vercel-ai';
+export class VercelAIExecutor extends ExecutorFramework {
+  readonly name = 'vercel-ai'
+  readonly version = '1.0.0'
+  readonly displayName = 'Vercel AI SDK'
+
+  async getAvailableTools(): Promise<ToolDefinition[]> {
+    return [
+      {
+        id: 'input',
+        name: 'Entrada de Texto',
+        description: 'Ingresa tu texto o datos aquí',
+        framework: 'vercel-ai',
+        category: 'Input/Output',
+        icon: '✏️',
+        defaultConfig: {
+          text: '',
+          placeholder: 'Escribe tu prompt aquí...'
+        }
+      },
+      {
+        id: 'agent',
+        name: 'Agente IA',
+        description: 'Procesamiento inteligente con IA',
+        framework: 'vercel-ai',
+        category: 'AI Agents',
+        icon: '🤖',
+        defaultConfig: {
+          model: 'gpt-3.5-turbo',
+          temperature: 0.7,
+          maxTokens: 1000,
+          stream: false,
+          systemPrompt: 'You are a helpful AI assistant.'
+        }
+      },
+      {
+        id: 'output',
+        name: 'Resultado',
+        description: 'Salida final del procesamiento',
+        framework: 'vercel-ai',
+        category: 'Input/Output',
+        icon: '✨',
+        defaultConfig: {}
+      },
+      {
+        id: 'ffmpeg',
+        name: 'FFmpeg Video',
+        description: 'Crear videos con FFmpeg',
+        framework: 'vercel-ai',
+        category: 'Media Tools',
+        icon: '🎬',
+        defaultConfig: {
+          inputFormat: 'images',
+          outputFormat: 'mp4',
+          fps: 30,
+          quality: 'high'
+        }
+      },
+      {
+        id: 'imageGenerator',
+        name: 'Generador de Imágenes',
+        description: 'Genera imágenes con AI',
+        framework: 'vercel-ai',
+        category: 'Media Tools',
+        icon: '🎨',
+        defaultConfig: {
+          model: 'dall-e-3',
+          size: '1024x1024',
+          quality: 'standard'
+        }
+      },
+      {
+        id: 'prompt',
+        name: 'Plantilla de Prompt',
+        description: 'Prompt estructurado con variables',
+        framework: 'vercel-ai',
+        category: 'Utilities',
+        icon: '📋',
+        defaultConfig: {
+          template: 'Hello {{name}}, how can I help you with {{topic}}?',
+          variables: {}
+        }
+      },
+      {
+        id: 'function',
+        name: 'Función Personalizada',
+        description: 'Ejecuta funciones personalizadas',
+        framework: 'vercel-ai',
+        category: 'Utilities',
+        icon: '⚙️',
+        defaultConfig: {
+          functionName: 'transform',
+          code: 'return { processed: true, input: data };'
+        }
+      },
+      {
+        id: 'tool',
+        name: 'Tool',
+        description: 'Herramientas para agentes IA',
+        framework: 'vercel-ai',
+        category: 'Utilities',
+        icon: '🛠️',
+        defaultConfig: {
+          toolName: 'custom_tool',
+          description: 'Una herramienta personalizada',
+          parameters: {}
+        }
+      }
+    ]
+  }
+
+  validateConfig(toolId: string, config: any): ValidationResult {
+    const tools = this.getAvailableTools();
+    // Note: This is async but we need sync validation for now
+    // In a real implementation, we might cache tool definitions
+    
+    switch (toolId) {
+      case 'agent':
+        if (!config.model) {
+          return { valid: false, errors: ['Model is required'] };
+        }
+        if (config.temperature < 0 || config.temperature > 2) {
+          return { valid: false, errors: ['Temperature must be between 0 and 2'] };
+        }
+        return { valid: true };
+      
+      case 'input':
+      case 'output':
+        return { valid: true }; // Input/Output nodes are always valid
+      
+      case 'prompt':
+        if (!config.template) {
+          return { valid: false, errors: ['Template is required'] };
+        }
+        return { valid: true };
+      
+      case 'function':
+        if (!config.functionName) {
+          return { valid: false, errors: ['Function name is required'] };
+        }
+        return { valid: true };
+      
+      case 'tool':
+        if (!config.toolName) {
+          return { valid: false, errors: ['Tool name is required'] };
+        }
+        return { valid: true };
+      
+      case 'ffmpeg':
+        return { valid: true }; // FFmpeg tools are always valid
+        
+      case 'imageGenerator':
+        return { valid: true }; // Image generator tools are always valid
+      
+      default:
+        return { valid: true, warnings: ['Unknown tool, using default validation'] };
+    }
+  }
+
+  async execute(toolId: string, config: any, context: ExecutionContext): Promise<ExecutionResult> {
+    const logs: string[] = [];
+    const startTime = Date.now();
+
+    try {
+      logs.push(`Executing Vercel AI tool: ${toolId}`);
+      
+      // Convert new context to old context format for backward compatibility
+      const oldContext: OldExecutionContext = {
+        nodeId: context.nodeId,
+        componentName: toolId,
+        framework: 'vercel-ai',
+        inputs: context.previousResults,
+        parameters: config,
+        
+        // Legacy fields that might be needed
+        nodeType: toolId,
+        nodeData: { ...config },
+        inputConnections: {},
+        outputConnections: {},
+        globalContext: context.globalConfig
+      };
+      
+      // Handle different tool types
+      switch (toolId) {
+        case 'input':
+          return this.executeInputNode(oldContext, logs);
+        case 'output':
+          return this.executeOutputNode(oldContext, logs);
+        case 'agent':
+          return await this.executeRealVercelAI(oldContext, logs);
+        case 'prompt':
+          return this.executePromptNode(oldContext, logs);
+        case 'function':
+          return this.executeFunctionNode(oldContext, logs);
+        case 'tool':
+          return this.executeToolNode(oldContext, logs);
+        case 'ffmpeg':
+        case 'imageGenerator':
+          // These will use the legacy execution for now
+          return this.executeGenericNode(oldContext, logs);
+        default:
+          return this.executeGenericNode(oldContext, logs);
+      }
+      
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+        logs,
+        metadata: {
+          executionTime: Date.now() - startTime,
+          toolId,
+          framework: this.name
+        }
+      };
+    }
+  }
 
   private getGlobalConfig() {
     try {
@@ -64,7 +279,7 @@ export class VercelAIExecutor extends ComponentExecutor {
   }
 
   private async executeRealVercelAI(
-    context: ExecutionContext, 
+    context: OldExecutionContext, 
     logs: string[]
   ): Promise<ExecutionResult> {
     logs.push(`🤖 Executing distributed Vercel AI: ${context.componentName}`);
@@ -91,16 +306,18 @@ export class VercelAIExecutor extends ComponentExecutor {
       const mockPrompt = 'Hello! Please provide a message or question.';
       
       return {
-        nodeId: context.nodeId,
-        outputs: {
+        success: true,
+        result: {
           response: `Mock AI Response: I didn't receive a prompt to respond to. Please connect an Input node with text to this Agent node.`,
           tokens: { prompt: 0, completion: 0, total: 0 },
           finishReason: 'stop',
           model: config.model
         },
-        status: 'success',
-        executionTime: 0,
-        logs
+        logs,
+        metadata: {
+          nodeId: context.nodeId,
+          executionTime: 0
+        }
       };
     }
 
@@ -126,31 +343,35 @@ export class VercelAIExecutor extends ComponentExecutor {
         if (config.stream) {
           const result = await this.executeStreaming(prompt, systemPrompt, config, logs);
           return {
-            nodeId: context.nodeId,
-            outputs: {
+            success: true,
+            result: {
               response: result.response,
               stream: result.stream,
               tokens: result.tokens,
               finishReason: result.finishReason,
               model: config.model
             },
-            status: 'success',
-            executionTime: 0,
-            logs
+            logs,
+            metadata: {
+              nodeId: context.nodeId,
+              executionTime: 0
+            }
           };
         } else {
           const result = await this.executeGenerate(prompt, systemPrompt, config, logs);
           return {
-            nodeId: context.nodeId,
-            outputs: {
+            success: true,
+            result: {
               response: result.response,
               tokens: result.tokens,
               finishReason: result.finishReason,
               model: config.model
             },
-            status: 'success',
-            executionTime: 0,
-            logs
+            logs,
+            metadata: {
+              nodeId: context.nodeId,
+              executionTime: 0
+            }
           };
         }
       }
@@ -191,11 +412,13 @@ export class VercelAIExecutor extends ComponentExecutor {
       logs.push(`✅ Distributed execution completed`);
       
       return {
-        nodeId: context.nodeId,
-        outputs: result.outputs || result,
-        status: result.status || 'success',
-        executionTime: result.executionTime || 0,
-        logs: [...logs, ...(result.logs || [])]
+        success: true,
+        result: result.outputs || result,
+        logs: [...logs, ...(result.logs || [])],
+        metadata: {
+          nodeId: context.nodeId,
+          executionTime: result.executionTime || 0
+        }
       };
 
     } catch (error) {
@@ -321,7 +544,7 @@ export class VercelAIExecutor extends ComponentExecutor {
     };
   }
 
-  private executeInputNode(context: ExecutionContext, logs: string[]): ExecutionResult {
+  private executeInputNode(context: OldExecutionContext, logs: string[]): ExecutionResult {
     logs.push('📝 Processing input node...');
     
     // Get text from the node's inputs
@@ -330,19 +553,21 @@ export class VercelAIExecutor extends ComponentExecutor {
     logs.push(`📤 Input text: "${text}"`);
     
     return {
-      nodeId: context.nodeId,
-      outputs: {
+      success: true,
+      result: {
         prompt: text,
         input: text,
         text: text
       },
-      status: 'success',
-      executionTime: 0,
-      logs
+      logs,
+      metadata: {
+        nodeId: context.nodeId,
+        executionTime: 0
+      }
     };
   }
 
-  private executeOutputNode(context: ExecutionContext, logs: string[]): ExecutionResult {
+  private executeOutputNode(context: OldExecutionContext, logs: string[]): ExecutionResult {
     logs.push('📥 Processing output node...');
     
     // Collect all available inputs as the result
@@ -351,18 +576,20 @@ export class VercelAIExecutor extends ComponentExecutor {
     logs.push(`📊 Received result: ${typeof result === 'string' ? result.substring(0, 100) + '...' : JSON.stringify(result).substring(0, 100) + '...'}`);
     
     return {
-      nodeId: context.nodeId,
-      outputs: {
+      success: true,
+      result: {
         result: result,
         display: result
       },
-      status: 'success',
-      executionTime: 0,
-      logs
+      logs,
+      metadata: {
+        nodeId: context.nodeId,
+        executionTime: 0
+      }
     };
   }
 
-  private executePromptNode(context: ExecutionContext, logs: string[]): ExecutionResult {
+  private executePromptNode(context: OldExecutionContext, logs: string[]): ExecutionResult {
     logs.push('📝 Processing prompt node...');
     
     const template = context.inputs.template || context.parameters.template || '';

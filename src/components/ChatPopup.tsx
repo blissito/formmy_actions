@@ -10,11 +10,11 @@ import {
   FiTrash2,
   FiMaximize2,
   FiSend,
-  FiBot,
   FiUser,
   FiLoader,
   FiSettings
 } from 'react-icons/fi';
+import { RiRobot2Line } from 'react-icons/ri';
 import { useWorkflowExecution } from '../runtime/WorkflowExecutionContext';
 import { useTranslation } from '../i18n';
 import { SimpleChatAgent } from '../runtime/agents/SimpleChatAgent';
@@ -227,7 +227,7 @@ Be helpful, conversational, and reference the workflow state when relevant.`
   const getMessageIcon = (type: string) => {
     switch (type) {
       case 'user': return <FiUser size={16} className="text-blue-600" />;
-      case 'bot': return <FiBot size={16} className="text-green-600" />;
+      case 'bot': return <RiRobot2Line size={16} className="text-green-600" />;
       case 'system': return <FiSettings size={16} className="text-gray-500" />;
       default: return null;
     }
@@ -384,7 +384,7 @@ Be helpful, conversational, and reference the workflow state when relevant.`
           <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-200">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white">
-                <FiBot size={16} />
+                <RiRobot2Line size={16} />
               </div>
               <div>
                 <h3 className="font-semibold text-gray-800">Workflow Chat</h3>

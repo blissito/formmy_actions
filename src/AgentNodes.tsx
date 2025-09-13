@@ -642,7 +642,7 @@ export function ConversationalAgentNode({ data, id }: NodeProps) {
   return (
     <>
       <div
-        className={`min-w-[200px] p-4 ${statusStyling.borderStyle} rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-200 relative bg-gradient-to-br from-green-50 to-green-100`}
+        className={`min-w-[200px] p-4 ${statusStyling.borderStyle} rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-200 relative bg-white bg-gradient-to-br from-green-50 to-green-100`}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >

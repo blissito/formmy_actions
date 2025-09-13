@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FiMessageCircle, FiX, FiSend } from 'react-icons/fi';
+import { FiMessageCircle, FiX, FiSend, FiEye } from 'react-icons/fi';
+import { ExecutionTracer } from './ExecutionTracer';
+import type { FlowExecution } from '../runtime/ExecutionEngine';
 
 interface Message {
   id: string;
@@ -11,7 +13,7 @@ interface Message {
 interface ChatBubbleProps {
   isOpen?: boolean;
   onToggle?: () => void;
-  onSendMessage?: (message: string) => Promise<string>;
+  onSendMessage?: (message: string) => Promise<{ message: string; execution?: FlowExecution }>;
   title?: string;
   welcomeMessage?: string;
   placeholder?: string;
@@ -38,6 +40,8 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [lastExecution, setLastExecution] = useState<FlowExecution | undefined>(undefined);
+  const [isTracerOpen, setIsTracerOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Initialize with welcome message
@@ -83,9 +87,17 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
 
     try {
       let botResponse = "Thanks for your message! This is a demo response.";
+      let execution: FlowExecution | undefined;
 
       if (onSendMessage) {
-        botResponse = await onSendMessage(inputText);
+        const result = await onSendMessage(inputText);
+        if (typeof result === 'string') {
+          botResponse = result;
+        } else {
+          botResponse = result.message;
+          execution = result.execution;
+          setLastExecution(execution);
+        }
       }
 
       const botMessage: Message = {
@@ -161,12 +173,23 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
             </div>
             <span>{title}</span>
           </div>
-          <button
-            onClick={toggleChat}
-            className="hover:bg-white/20 p-1 rounded transition-colors"
-          >
-            <FiX size={20} />
-          </button>
+          <div className="flex items-center gap-2">
+            {lastExecution && (
+              <button
+                onClick={() => setIsTracerOpen(!isTracerOpen)}
+                className="hover:bg-white/20 p-1 rounded transition-colors"
+                title="View Execution Trace"
+              >
+                <FiEye size={20} />
+              </button>
+            )}
+            <button
+              onClick={toggleChat}
+              className="hover:bg-white/20 p-1 rounded transition-colors"
+            >
+              <FiX size={20} />
+            </button>
+          </div>
         </div>
 
         {/* Messages */}
@@ -225,6 +248,13 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
           </div>
         </form>
       </div>
+
+      {/* Execution Tracer */}
+      <ExecutionTracer
+        execution={lastExecution}
+        isVisible={isTracerOpen}
+        onToggle={() => setIsTracerOpen(false)}
+      />
     </>
   );
 };

@@ -62,6 +62,7 @@ import { ChatBubble } from "./components/ChatBubble";
 
 import { cn } from './utils/cn';
 import { WorkflowExecutionProvider } from './runtime/WorkflowExecutionContext';
+import { useVariables, VariablesProvider } from './contexts/VariablesContext';
 
 // Initialize executors
 import './runtime/ExecutorRegistry';
@@ -241,6 +242,8 @@ function FlowCanvas({
     useGlobalConfig();
   const [showGlobalSettings, setShowGlobalSettings] = useState(false);
 
+  // Variables context for global state management
+  const { setVariable, getVariable, replaceVariables, setWorkflowVariable, getWorkflowVariable } = useVariables();
 
   // Estado para cambios no guardados
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -702,21 +705,71 @@ function FlowCanvas({
             onSendMessage={async (message) => {
               // Execute the workflow when user sends a message
               try {
-                await executeFlow();
+                // Set the user message as a workflow variable for nodes to access
+                setWorkflowVariable('user_message', message);
+                setWorkflowVariable('topic', message); // Set topic variable
+                setVariable('topic', message, 'runtime', 'Current topic from chat');
+
+                // Execute the flow
+                const execution = await executionEngine.executeFlow(
+                  `chat_flow_${Date.now()}`,
+                  nodes,
+                  edges,
+                  {
+                    prompt: message,
+                    input: message,
+                    topic: message,
+                    user_message: message,
+                  },
+                  (nodeId, status, result) => {
+                    setNodes((prevNodes) =>
+                      prevNodes.map((node) =>
+                        node.id === nodeId
+                          ? {
+                              ...node,
+                              data: {
+                                ...node.data,
+                                executionStatus: status,
+                                result: result,
+                              },
+                            }
+                          : node
+                      )
+                    );
+                  }
+                );
+
+                // Update global variables with execution results
+                execution.results.forEach((result, nodeId) => {
+                  if (result.outputs) {
+                    Object.entries(result.outputs).forEach(([key, value]) => {
+                      if (key === 'topic' || key === 'response' || key === 'result') {
+                        setWorkflowVariable(key, value);
+                        setVariable(key, String(value), 'runtime', `Result from node ${nodeId}`);
+                      }
+                    });
+                  }
+                });
 
                 // Get the last output from the output nodes
+                let responseMessage = "Workflow executed successfully!";
                 const outputNodes = nodes.filter(n => n.type === "output");
-                if (outputNodes.length > 0) {
-                  const outputNode = outputNodes[0];
-                  if (outputNode.data.result) {
-                    return `Workflow executed successfully! Result: ${outputNode.data.result}`;
+                if (outputNodes.length > 0 && execution.results.size > 0) {
+                  const lastResult = Array.from(execution.results.values()).pop();
+                  if (lastResult && lastResult.outputs.response) {
+                    responseMessage = `Workflow executed! Result: ${lastResult.outputs.response}`;
                   }
                 }
 
-                return "Workflow executed successfully!";
+                return {
+                  message: responseMessage,
+                  execution
+                };
               } catch (error) {
                 console.error('Workflow execution error:', error);
-                return `Sorry, there was an error executing the workflow: ${error instanceof Error ? error.message : String(error)}`;
+                return {
+                  message: `Sorry, there was an error executing the workflow: ${error instanceof Error ? error.message : String(error)}`,
+                };
               }
             }}
           />
@@ -848,17 +901,19 @@ function App({ onSave, onExecute, readonly }: AppProps) {
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   return (
-    <ReactFlowProvider>
-      <WorkflowExecutionProvider>
-        <FlowCanvas onSave={onSave} onExecute={onExecute} readonly={readonly} />
+    <VariablesProvider>
+      <ReactFlowProvider>
+        <WorkflowExecutionProvider>
+          <FlowCanvas onSave={onSave} onExecute={onExecute} readonly={readonly} />
 
-        {/* Chat Sidebar - Rendered as Portal outside ReactFlow */}
-        <ChatSidebar
-          isOpen={isChatOpen}
-          onToggle={() => setIsChatOpen(!isChatOpen)}
-        />
-      </WorkflowExecutionProvider>
-    </ReactFlowProvider>
+          {/* Chat Sidebar - Rendered as Portal outside ReactFlow */}
+          <ChatSidebar
+            isOpen={isChatOpen}
+            onToggle={() => setIsChatOpen(!isChatOpen)}
+          />
+        </WorkflowExecutionProvider>
+      </ReactFlowProvider>
+    </VariablesProvider>
   );
 }
 

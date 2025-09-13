@@ -57,6 +57,7 @@ import { RiRobot2Line } from "react-icons/ri";
 import InlineBetaBadge from "./InlineBetaBadge";
 import FrameworkSidebar from "./components/FrameworkSidebar";
 import BarraDeHerramientas from "./components/BarraDeHerramientas";
+import { ChatPopup } from "./components/ChatPopup";
 
 import { cn } from './utils/cn';
 import { WorkflowExecutionProvider } from './runtime/WorkflowExecutionContext';
@@ -823,6 +824,15 @@ function FlowCanvas({
           },
         }}
       /> */}
+
+      {/* Chat Popup - Flowise Style */}
+      <ChatPopup
+        workflowId="current"
+        onOpenChange={(isOpen) => {
+          // Optional: Handle chat state changes
+          console.log('Chat is now:', isOpen ? 'open' : 'closed');
+        }}
+      />
     </div>
   );
 }

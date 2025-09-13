@@ -3,7 +3,7 @@ export interface ToolDefinition {
   id: string
   name: string
   description: string
-  framework: 'vercel-ai' | 'llamaindex' | 'langchain' | 'custom'
+  framework: 'vercel-ai' | 'llamaindex' | 'langchain' | 'agents' | 'custom'
   category: string
   icon: string
   configSchema?: any
@@ -21,6 +21,10 @@ export interface ExecutionContext {
   globalConfig: Record<string, any>
   nodeId: string
   flowId?: string
+  sessionId?: string
+  debug?: boolean
+  streaming?: boolean
+  onProgress?: (event: { type: string; data: any }) => void
 }
 
 export interface ExecutionResult {

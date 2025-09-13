@@ -50,6 +50,8 @@
   "homepage": "https://github.com/blissito/formmy_actions#readme",
   "dependencies": {
     "@ai-sdk/openai": "^2.0.24",
+    "@langchain/core": "^0.3.75",
+    "@langchain/openai": "^0.6.11",
     "@llamaindex/core": "^0.6.20",
     "@tailwindcss/forms": "^0.5.10",
     "@types/js-yaml": "^4.0.9",
@@ -57,6 +59,7 @@
     "ai": "^5.0.34",
     "clsx": "^2.1.1",
     "js-yaml": "^4.1.0",
+    "langchain": "^0.3.33",
     "llamaindex": "^0.11.28",
     "lucide-react": "^0.542.0",
     "openai": "^5.19.1",
@@ -65,7 +68,8 @@
     "react-hot-toast": "^2.6.0",
     "react-icons": "^5.5.0",
     "tailwind-merge": "^3.3.1",
-    "tsx": "^4.20.5"
+    "tsx": "^4.20.5",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",

@@ -2,6 +2,7 @@
 import { executorRegistry } from './ExecutorFramework';
 import { VercelAIExecutor } from './executors/VercelAIExecutor';
 import { LlamaIndexExecutor } from './executors/LlamaIndexExecutor';
+import { SimpleAgentExecutor } from './executors/SimpleAgentExecutor';
 
 // Initialize and register all available executors
 export const initializeExecutors = () => {
@@ -12,6 +13,11 @@ export const initializeExecutors = () => {
   // Register LlamaIndex executor
   const llamaIndexExecutor = new LlamaIndexExecutor();
   executorRegistry.register(llamaIndexExecutor);
+
+  // Register Simple Agent executor (UI-only)
+  const simpleAgentExecutor = new SimpleAgentExecutor();
+  simpleAgentExecutor.initialize();
+  executorRegistry.register(simpleAgentExecutor);
 
   // Future executors will be registered here:
   // executorRegistry.register(new LangChainExecutor());

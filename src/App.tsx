@@ -34,6 +34,13 @@ import {
 } from "./CustomNodes";
 import { FFmpegNode } from "./tools/FFmpegTool";
 import { ImageGeneratorNode } from "./tools/ImageGeneratorTool";
+import {
+  ReactAgentNode,
+  ConversationalAgentNode,
+  WorkflowGeneratorNode,
+} from "./AgentNodes";
+import { ChatNode } from "./ChatNode";
+import { StartNode } from "./StartNode";
 import { GlobalSettings, useGlobalConfig } from "./components/GlobalSettings";
 import { ExecutionEngine } from "./runtime/ExecutionEngine";
 import { FlowExporter } from "./tools/FlowExporter";
@@ -49,8 +56,10 @@ import { HiOutlineSparkles } from "react-icons/hi2";
 import { RiRobot2Line } from "react-icons/ri";
 import InlineBetaBadge from "./InlineBetaBadge";
 import FrameworkSidebar from "./components/FrameworkSidebar";
+import BarraDeHerramientas from "./components/BarraDeHerramientas";
 
 import { cn } from './utils/cn';
+import { WorkflowExecutionProvider } from './runtime/WorkflowExecutionContext';
 
 // Initialize executors
 import './runtime/ExecutorRegistry';
@@ -149,6 +158,13 @@ const customNodeTypes = {
   tool: ToolNode,
   ffmpeg: FFmpegNode,
   imageGenerator: ImageGeneratorNode,
+  // Agent nodes
+  'react-agent': ReactAgentNode,
+  'conversational-agent': ConversationalAgentNode,
+  'workflow-generator': WorkflowGeneratorNode,
+  // Workflow nodes
+  chat: ChatNode,
+  start: StartNode,
 };
 
 let id = 0;
@@ -632,8 +648,8 @@ function FlowCanvas({
 
   return (
     <div className="flex w-screen h-screen bg-gray-50">
-      {/* New Framework-based Sidebar */}
-      <FrameworkSidebar
+      {/* Nueva Barra de Herramientas en Español - Estilo Flowise */}
+      <BarraDeHerramientas
         isExecuting={isExecuting}
         onExecuteFlow={executeFlow}
         onShowGlobalSettings={() => setShowGlobalSettings(true)}
@@ -820,7 +836,9 @@ interface AppProps {
 function App({ onSave, onExecute, readonly }: AppProps) {
   return (
     <ReactFlowProvider>
-      <FlowCanvas onSave={onSave} onExecute={onExecute} readonly={readonly} />
+      <WorkflowExecutionProvider>
+        <FlowCanvas onSave={onSave} onExecute={onExecute} readonly={readonly} />
+      </WorkflowExecutionProvider>
     </ReactFlowProvider>
   );
 }

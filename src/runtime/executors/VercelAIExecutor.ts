@@ -160,64 +160,6 @@ export class VercelAIExecutor extends ExecutorFramework {
     }
   }
 
-  async execute(toolId: string, config: any, context: ExecutionContext): Promise<ExecutionResult> {
-    const logs: string[] = [];
-    const startTime = Date.now();
-
-    try {
-      logs.push(`Executing Vercel AI tool: ${toolId}`);
-      
-      // Convert new context to old context format for backward compatibility
-      const oldContext: OldExecutionContext = {
-        nodeId: context.nodeId,
-        componentName: toolId,
-        framework: 'vercel-ai',
-        inputs: context.previousResults,
-        parameters: config,
-        
-        // Legacy fields that might be needed
-        nodeType: toolId,
-        nodeData: { ...config },
-        inputConnections: {},
-        outputConnections: {},
-        globalContext: context.globalConfig
-      };
-      
-      // Handle different tool types
-      switch (toolId) {
-        case 'input':
-          return this.executeInputNode(oldContext, logs);
-        case 'output':
-          return this.executeOutputNode(oldContext, logs);
-        case 'agent':
-          return await this.executeRealVercelAI(oldContext, logs);
-        case 'prompt':
-          return this.executePromptNode(oldContext, logs);
-        case 'function':
-          return this.executeFunctionNode(oldContext, logs);
-        case 'tool':
-          return this.executeToolNode(oldContext, logs);
-        case 'ffmpeg':
-        case 'imageGenerator':
-          // These will use the legacy execution for now
-          return this.executeGenericNode(oldContext, logs);
-        default:
-          return this.executeGenericNode(oldContext, logs);
-      }
-      
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-        logs,
-        metadata: {
-          executionTime: Date.now() - startTime,
-          toolId,
-          framework: this.name
-        }
-      };
-    }
-  }
 
   private getGlobalConfig() {
     try {

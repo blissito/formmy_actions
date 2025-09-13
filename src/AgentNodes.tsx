@@ -6,6 +6,10 @@
 import React, { useState, useEffect } from 'react';
 import { Handle, Position, type NodeProps, useReactFlow } from '@xyflow/react';
 import { useWorkflowExecution } from './runtime/WorkflowExecutionContext';
+import { useGlobalConfig } from './components/GlobalSettings';
+import { useModelsService, type ModelInfo } from './services/modelsService';
+import { FlowiseChat, type ChatMessage } from './components/FlowiseChat';
+import TextInputWithVariables from './components/TextInputWithVariables';
 import {
   FiMessageCircle,
   FiZap,
@@ -36,6 +40,9 @@ interface BaseAgentProps {
   handleColor: string;
   status?: AgentStatus;
   progress?: number;
+  defaultExpanded?: boolean;
+  minWidth?: string;
+  maxWidth?: string;
 }
 
 // Base Agent Component with shared functionality
@@ -176,7 +183,7 @@ function BaseAgentNode({
         </div>
 
         {/* Content */}
-        <div className={`transition-all duration-200 ${isExpanded ? 'max-h-96' : 'max-h-20'} overflow-hidden`}>
+        <div className={`transition-all duration-300 ${isExpanded ? '' : 'max-h-16 overflow-hidden'}`}>
           {children}
         </div>
 
@@ -371,25 +378,94 @@ export function ConversationalAgentNode({ data, id }: NodeProps) {
     executeNode,
     getGlobalData,
     setGlobalData,
-    getNodeState
+    getNodeState,
+    replaceVariables
   } = useWorkflowExecution();
 
-  const [message, setMessage] = useState(String(data?.message || ''));
+  const { config } = useGlobalConfig();
+  const modelsService = useModelsService();
+
+  // Flowise v2 Complete Configuration - Convert to ChatMessage format
+  const initializeMessages = (messagesData: any[]): ChatMessage[] => {
+    if (!messagesData || messagesData.length === 0) {
+      return [];
+    }
+    return messagesData.map((msg, index) => ({
+      id: msg.id || String(index + 1),
+      type: msg.type || 'user',
+      content: msg.content || '',
+      timestamp: msg.timestamp || new Date().toISOString()
+    }));
+  };
+
+  const [messages, setMessages] = useState<ChatMessage[]>(initializeMessages(data?.messages));
   const [systemMessage, setSystemMessage] = useState(String(data?.systemMessage || ''));
-  const { updateNodeData } = useReactFlow();
+  const [model, setModel] = useState(String(data?.model || 'gpt-4o-mini'));
+  const [tools, setTools] = useState<string[]>(data?.tools || []);
+  const [temperature, setTemperature] = useState(Number(data?.temperature || 0.7));
+  const [maxTokens, setMaxTokens] = useState(Number(data?.maxTokens || 1000));
+  const [updateFlowState, setUpdateFlowState] = useState(Boolean(data?.updateFlowState || false));
+  const [flowStateKey, setFlowStateKey] = useState(String(data?.flowStateKey || 'chat_result'));
+
+  const [availableModels, setAvailableModels] = useState<ModelInfo[]>([]);
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
+  const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const { updateNodeData, getNodes, setNodes } = useReactFlow();
 
   // Get current node state from global context
   const nodeState = getNodeState(id);
   const status = nodeState.status as AgentStatus;
 
   useEffect(() => {
-    setMessage(String(data?.message || ''));
+    setMessages(initializeMessages(data?.messages));
     setSystemMessage(String(data?.systemMessage || ''));
+    setModel(String(data?.model || 'gpt-4o-mini'));
+    setTools(data?.tools || []);
+    setTemperature(Number(data?.temperature || 0.7));
+    setMaxTokens(Number(data?.maxTokens || 1000));
+    setUpdateFlowState(Boolean(data?.updateFlowState || false));
+    setFlowStateKey(String(data?.flowStateKey || 'chat_result'));
   }, [data]);
 
-  const handleMessageChange = (newMessage: string) => {
-    setMessage(newMessage);
-    updateNodeData(id, { ...data, message: newMessage });
+  // Handle functions for all Flowise v2 configurations - ChatMessage format
+  const handleMessagesChange = (newMessages: ChatMessage[]) => {
+    setMessages(newMessages);
+    updateNodeData(id, { ...data, messages: newMessages });
+  };
+
+  const handleSendMessage = (content: string, type: 'user' | 'assistant' | 'system') => {
+    const newMessage: ChatMessage = {
+      id: String(Date.now()),
+      type,
+      content,
+      timestamp: new Date().toISOString()
+    };
+    const updatedMessages = [...messages, newMessage];
+    handleMessagesChange(updatedMessages);
+  };
+
+  const handleUpdateMessage = (index: number, field: keyof ChatMessage, value: string) => {
+    const updatedMessages = messages.map((msg, i) =>
+      i === index ? { ...msg, [field]: value } : msg
+    );
+    handleMessagesChange(updatedMessages);
+  };
+
+  const handleRemoveMessage = (index: number) => {
+    const updatedMessages = messages.filter((_, i) => i !== index);
+    handleMessagesChange(updatedMessages);
+  };
+
+  const handleAddMessage = () => {
+    const newMessage: ChatMessage = {
+      id: String(Date.now()),
+      type: 'user',
+      content: '',
+      timestamp: new Date().toISOString()
+    };
+    const updatedMessages = [...messages, newMessage];
+    handleMessagesChange(updatedMessages);
   };
 
   const handleSystemMessageChange = (newSystemMessage: string) => {
@@ -397,29 +473,139 @@ export function ConversationalAgentNode({ data, id }: NodeProps) {
     updateNodeData(id, { ...data, systemMessage: newSystemMessage });
   };
 
+  const handleModelChange = (newModel: string) => {
+    setModel(newModel);
+    updateNodeData(id, { ...data, model: newModel });
+  };
+
+  const handleTemperatureChange = (newTemp: number) => {
+    setTemperature(newTemp);
+    updateNodeData(id, { ...data, temperature: newTemp });
+  };
+
+  const handleMaxTokensChange = (newMax: number) => {
+    setMaxTokens(newMax);
+    updateNodeData(id, { ...data, maxTokens: newMax });
+  };
+
+  const handleUpdateFlowStateChange = (enabled: boolean) => {
+    setUpdateFlowState(enabled);
+    updateNodeData(id, { ...data, updateFlowState: enabled });
+  };
+
+  const handleFlowStateKeyChange = (newKey: string) => {
+    setFlowStateKey(newKey);
+    updateNodeData(id, { ...data, flowStateKey: newKey });
+  };
+
+  // Load available models dynamically - siguiendo patrón Flowise v2
+  useEffect(() => {
+    const loadModels = async () => {
+      if (!config.openaiApiKey?.trim() && !config.anthropicApiKey?.trim()) {
+        setAvailableModels([]);
+        return;
+      }
+
+      setIsLoadingModels(true);
+      try {
+        const models = await modelsService.getAvailableModels({
+          openaiApiKey: config.openaiApiKey,
+          anthropicApiKey: config.anthropicApiKey
+        });
+        setAvailableModels(models);
+
+        // If current model is not available, select first available
+        const isCurrentModelAvailable = models.some(m => m.id === model);
+        if (models.length > 0 && !isCurrentModelAvailable) {
+          const defaultModel = models[0].id;
+          setModel(defaultModel);
+          updateNodeData(id, { ...data, model: defaultModel });
+        }
+      } catch (error) {
+        console.error('Failed to load models:', error);
+        setAvailableModels([]);
+      } finally {
+        setIsLoadingModels(false);
+      }
+    };
+
+    loadModels();
+  }, [config.openaiApiKey, config.anthropicApiKey, modelsService]);
+
+  const handleDuplicate = () => {
+    const nodes = getNodes();
+    const currentNode = nodes.find((n) => n.id === id);
+
+    if (currentNode) {
+      const newNode = {
+        ...currentNode,
+        id: `${currentNode.type}_${Date.now()}`,
+        position: {
+          x: currentNode.position.x + 50,
+          y: currentNode.position.y + 50,
+        },
+        selected: false,
+        data: {
+          ...currentNode.data,
+          messages: messages,
+          systemMessage: systemMessage,
+          model: model,
+          tools: tools,
+          temperature: temperature,
+          maxTokens: maxTokens,
+          updateFlowState: updateFlowState,
+          flowStateKey: flowStateKey,
+        },
+      };
+
+      setNodes((prev) => [...prev, newNode]);
+    }
+  };
+
   // Execute agent with global context
   const handleExecute = async () => {
-    if (status === 'running' || !message.trim()) return;
+    if (status === 'running' || messages.length === 0 || !messages.some((m) => m.content.trim())) return;
 
     try {
-      // Get input data from previous nodes
-      const inputData = getGlobalData('workflow_input') || getGlobalData('user_input') || message;
+      // Process messages with variable replacement - Flowise v2 pattern
+      const processedMessages = messages.map((msg: any) => ({
+        ...msg,
+        content: replaceVariables(msg.content)
+      }));
+      const processedSystemMessage = replaceVariables(systemMessage);
 
-      // Execute this node with global workflow context
+      // Get input data from previous nodes
+      const inputData = getGlobalData('workflow_input') || getGlobalData('user_input') || processedMessages;
+
+      // Execute this node with complete Flowise v2 configuration
       const result = await executeNode(id, 'conversational-agent', {
-        message: message,
-        systemMessage: systemMessage,
+        messages: processedMessages,
+        systemMessage: processedSystemMessage,
+        model: model,
+        tools: tools,
+        temperature: temperature,
+        maxTokens: maxTokens,
+        updateFlowState: updateFlowState,
+        flowStateKey: flowStateKey,
         inputData: inputData,
         context: workflowState.globalData
       });
 
       // Store result in global data for downstream nodes
       setGlobalData(`conversational_agent_${id}_result`, {
-        message: message,
+        messages: messages,
         response: result?.response || result,
         timestamp: new Date().toISOString(),
-        systemMessage: systemMessage
+        systemMessage: systemMessage,
+        model: model,
+        temperature: temperature,
+        maxTokens: maxTokens
       });
+
+      // Update Flow State if enabled - Flowise v2 Pattern
+      if (updateFlowState && flowStateKey) {
+        setGlobalData(flowStateKey, result?.response || result);
+      }
 
       console.log(`💭 Conversational Agent ${id} completed:`, result);
     } catch (error) {
@@ -427,59 +613,263 @@ export function ConversationalAgentNode({ data, id }: NodeProps) {
     }
   };
 
+  // Get status-based styling
+  const getStatusStyling = () => {
+    if (status === 'running') {
+      return {
+        borderStyle: "animate-pulse border-4 border-green-400",
+        bgOverlay: "absolute inset-0 bg-green-100 bg-opacity-20 rounded-3xl",
+      };
+    } else if (status === 'completed') {
+      return {
+        borderStyle: "border-2 border-green-400",
+        bgOverlay: "absolute inset-0 bg-green-100 bg-opacity-10 rounded-3xl",
+      };
+    } else if (status === 'error') {
+      return {
+        borderStyle: "border-2 border-red-400",
+        bgOverlay: "absolute inset-0 bg-red-100 bg-opacity-20 rounded-3xl",
+      };
+    }
+    return {
+      borderStyle: "border-2 border-green-400",
+      bgOverlay: "",
+    };
+  };
+
+  const statusStyling = getStatusStyling();
+
   return (
-    <BaseAgentNode
-      data={data}
-      id={id}
-      icon={<FiMessageCircle className="text-green-600" size={18} />}
-      title="Conversational Agent"
-      bgGradient="bg-gradient-to-br from-green-50 to-green-100"
-      borderColor="border-green-300"
-      handleColor="bg-green-500"
-      status={status}
-      progress={data?.progress as number}
-    >
-      <div className="space-y-3">
-        {/* Message Input */}
-        <div>
-          <label className="text-xs font-medium text-gray-700 mb-1 block">
-            Message
-          </label>
-          <textarea
-            value={message}
-            onChange={(e) => handleMessageChange(e.target.value)}
-            className="w-full p-2 border border-green-200 rounded-lg focus:ring-1 focus:ring-green-500 focus:border-transparent resize-none text-xs"
-            rows={2}
-            placeholder="What do you want to ask the agent?"
-          />
+    <>
+      <div
+        className={`min-w-[200px] p-4 ${statusStyling.borderStyle} rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-200 relative bg-gradient-to-br from-green-50 to-green-100`}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        {/* Status overlay */}
+        {statusStyling.bgOverlay && (
+          <div className={statusStyling.bgOverlay}></div>
+        )}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className="w-[30px] h-8 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white shadow-md relative">
+              <FiMessageCircle size={16} />
+              {status === 'running' && (
+                <div
+                  className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full animate-pulse"
+                  style={{ animationDuration: "2s" }}
+                ></div>
+              )}
+              {status === 'completed' && (
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full"></div>
+              )}
+              {status === 'error' && (
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></div>
+              )}
+            </div>
+            <div className="text-green-800 font-bold text-sm">
+              Conversational Agent
+              {status === 'running' && (
+                <span
+                  className="ml-1 text-amber-600 text-xs animate-pulse"
+                  style={{ animationDuration: "1.5s" }}
+                >
+                  (processing...)
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex gap-1">
+            <button
+              onClick={handleDuplicate}
+              className="w-6 h-6 rounded-lg bg-white hover:bg-green-50 flex items-center justify-center transition-colors shadow-sm border border-green-200"
+              title="Duplicar nodo"
+            >
+              <FiCopy size={12} className="text-green-600" />
+            </button>
+            <button
+              onClick={() => setIsConfigOpen(!isConfigOpen)}
+              className="w-6 h-6 rounded-lg bg-white hover:bg-green-50 flex items-center justify-center transition-colors shadow-sm border border-green-200"
+              title="Configuración"
+            >
+              <FiSettings size={12} className="text-green-600" />
+            </button>
+          </div>
         </div>
 
-        {/* System Message */}
-        <div>
-          <label className="text-xs font-medium text-gray-700 mb-1 block">
-            System Message (Optional)
-          </label>
-          <textarea
-            value={systemMessage}
-            onChange={(e) => handleSystemMessageChange(e.target.value)}
-            className="w-full p-2 border border-green-200 rounded-lg focus:ring-1 focus:ring-green-500 focus:border-transparent resize-none text-xs"
-            rows={2}
-            placeholder="Custom instructions for the agent..."
-          />
-        </div>
+        {isConfigOpen && (
+          <div className="mb-3 p-3 bg-white/60 rounded-2xl border border-green-300 space-y-3">
+            {/* Messages Configuration - Flowise v2 Chat Interface */}
+            <div>
+              <FlowiseChat
+                messages={messages}
+                onSendMessage={handleSendMessage}
+                onUpdateMessage={handleUpdateMessage}
+                onRemoveMessage={handleRemoveMessage}
+                onAddMessage={handleAddMessage}
+                isLoading={status === 'running'}
+                className="h-64"
+              />
+            </div>
 
-        {/* Execute Button */}
-        <button
-          onClick={handleExecute}
-          disabled={status === 'running' || !message.trim()}
-          className={`w-full py-2 px-3 rounded-lg text-xs font-medium transition-all ${
-            status === 'running' || !message.trim()
-              ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-              : 'bg-green-500 text-white hover:bg-green-600'
-          }`}
-        >
-          {status === 'running' ? 'Processing...' : 'Execute Agent'}
-        </button>
+            {/* System Message */}
+            <div>
+              <label className="text-xs font-medium text-gray-700 mb-1 block">
+                System Message (Optional)
+              </label>
+              <TextInputWithVariables
+                value={systemMessage}
+                onChange={handleSystemMessageChange}
+                className="border-green-200 focus:ring-green-500 text-xs"
+                rows={2}
+                placeholder="Custom instructions for the agent..."
+              />
+            </div>
+
+            {/* Model Selection - Dynamic from APIs */}
+            <div>
+              <label className="text-xs font-medium text-gray-700 mb-1 block">
+                LLM Model {isLoadingModels && '(Loading...)'}
+              </label>
+              {availableModels.length > 0 ? (
+                <select
+                  value={model}
+                  onChange={(e) => handleModelChange(e.target.value)}
+                  className="w-full p-2 border border-green-200 rounded-lg focus:ring-1 focus:ring-green-500 focus:border-green-500 text-xs bg-white"
+                  disabled={isLoadingModels}
+                >
+                  {/* Group by provider - consulta dinámica APIs */}
+                  {Object.entries(
+                    availableModels.reduce((acc, model) => {
+                      if (!acc[model.provider]) acc[model.provider] = [];
+                      acc[model.provider].push(model);
+                      return acc;
+                    }, {} as Record<string, ModelInfo[]>)
+                  ).map(([provider, models]) => (
+                    <optgroup key={provider} label={provider}>
+                      {models.map((modelInfo) => (
+                        <option key={modelInfo.id} value={modelInfo.id}>
+                          {modelInfo.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              ) : isLoadingModels ? (
+                <div className="w-full p-2 border border-blue-300 rounded-lg bg-blue-50 text-xs text-blue-800">
+                  🔄 Loading available models...
+                </div>
+              ) : (
+                <div className="w-full p-2 border border-yellow-300 rounded-lg bg-yellow-50 text-xs text-yellow-800">
+                  ⚠️ No API keys configured. Go to Settings to add API keys.
+                </div>
+              )}
+            </div>
+
+            {/* Advanced Configuration - Flowise v2 Pattern */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-gray-700 mb-1 block">
+                  Temperature
+                </label>
+                <input
+                  type="number"
+                  value={temperature}
+                  onChange={(e) => handleTemperatureChange(parseFloat(e.target.value) || 0.7)}
+                  className="w-full p-2 border border-green-200 rounded text-xs"
+                  min={0}
+                  max={2}
+                  step={0.1}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-700 mb-1 block">
+                  Max Tokens
+                </label>
+                <input
+                  type="number"
+                  value={maxTokens}
+                  onChange={(e) => handleMaxTokensChange(parseInt(e.target.value) || 1000)}
+                  className="w-full p-2 border border-green-200 rounded text-xs"
+                  min={1}
+                />
+              </div>
+            </div>
+
+            {/* Flow State Configuration */}
+            <div className="border border-green-200 rounded-lg p-3 bg-green-50">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-medium text-gray-700">
+                  Update Flow State
+                </label>
+                <input
+                  type="checkbox"
+                  checked={updateFlowState}
+                  onChange={(e) => handleUpdateFlowStateChange(e.target.checked)}
+                  className="rounded border-green-300 text-green-600 focus:ring-green-500"
+                />
+              </div>
+              {updateFlowState && (
+                <div>
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">
+                    Flow State Key
+                  </label>
+                  <input
+                    type="text"
+                    value={flowStateKey}
+                    onChange={(e) => handleFlowStateKeyChange(e.target.value)}
+                    className="w-full p-2 border border-green-200 rounded text-xs"
+                    placeholder="chat_result"
+                  />
+                  <div className="text-xs text-green-600 mt-1">
+                    💾 Result will be saved to flow state: {flowStateKey}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Connected Tools Display - Flowise v2 Visual Pattern */}
+            <div>
+              <label className="text-xs font-medium text-gray-700 mb-1 block">
+                Connected Tools
+              </label>
+              <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded-lg border">
+                🔗 Tools connect visually as separate nodes
+                <br />
+                <span className="text-green-600">
+                  {tools.length > 0 ? `${tools.length} tool(s) connected` : 'Drag tool nodes from sidebar to connect'}
+                </span>
+              </div>
+            </div>
+
+            {/* Execute Button */}
+            <button
+              onClick={handleExecute}
+              disabled={status === 'running' || messages.length === 0 || !messages.some((m) => m.content.trim()) || availableModels.length === 0}
+              className={`w-full py-2 px-3 rounded-lg text-xs font-medium transition-all ${
+                status === 'running' || messages.length === 0 || !messages.some((m) => m.content.trim()) || availableModels.length === 0
+                  ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                  : 'bg-green-500 text-white hover:bg-green-600'
+              }`}
+            >
+              {status === 'running'
+                ? 'Processing...'
+                : availableModels.length === 0
+                  ? 'No API Keys Available'
+                  : messages.length === 0 || !messages.some((m) => m.content.trim())
+                    ? 'Add Messages First'
+                    : 'Execute Agent'
+              }
+            </button>
+          </div>
+        )}
+
+        <div className="text-gray-600 text-xs text-center font-medium">
+          Conversational AI Agent
+        </div>
+        <div className="text-gray-500 text-xs text-center">
+          Status: {status || 'idle'}
+        </div>
 
         {/* Global Workflow Info */}
         {workflowState.executionId && (
@@ -493,17 +883,53 @@ export function ConversationalAgentNode({ data, id }: NodeProps) {
 
         {/* Conversation History */}
         {(nodeState.result || data?.history) && (
-          <div className="mt-3 p-2 bg-white bg-opacity-60 rounded-lg">
+          <div className="mt-2 p-2 bg-white bg-opacity-60 rounded-lg">
             <div className="text-xs font-medium text-gray-700 mb-1">
               Last Response:
             </div>
-            <div className="text-xs text-gray-600 max-h-20 overflow-y-auto">
+            <div className="text-xs text-gray-600 max-h-16 overflow-y-auto">
               {String(nodeState.result?.response || data.history?.[data.history.length - 1]?.response || 'No response yet')}
             </div>
           </div>
         )}
       </div>
-    </BaseAgentNode>
+
+      {/* Input Handles - Flowise v2 Pattern */}
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="input"
+        className="w-4 h-4 bg-green-500 border-2 border-white shadow-md"
+        style={{ backgroundColor: "#10b981", top: "30%" }}
+      />
+      <div className="absolute left-[-30px] top-[35%] text-[10px] text-gray-500 bg-white px-1 rounded shadow-sm border opacity-60 z-[-1]">
+        input
+      </div>
+
+      {/* Tools Input Handle */}
+      <Handle
+        type="target"
+        position={Position.Top}
+        id="tools"
+        className="w-4 h-4 bg-orange-500 border-2 border-white shadow-md"
+        style={{ backgroundColor: "#f97316" }}
+      />
+      <div className="absolute top-[-35px] left-1/2 transform -translate-x-1/2 text-[10px] text-gray-500 bg-white px-1 rounded shadow-sm border opacity-60 z-[-1]">
+        tools
+      </div>
+
+      {/* Output Handles */}
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="output"
+        className="w-4 h-4 bg-green-500 border-2 border-white shadow-md"
+        style={{ backgroundColor: "#10b981", top: "40%" }}
+      />
+      <div className="absolute right-[-35px] top-[45%] text-[10px] text-gray-500 bg-white px-1 rounded shadow-sm border opacity-60 z-[-1]">
+        output
+      </div>
+    </>
   );
 }
 

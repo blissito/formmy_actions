@@ -16,6 +16,8 @@ import {
 import { HiOutlineSparkles } from "react-icons/hi2";
 import { TbRobot } from "react-icons/tb";
 import { ModelService, type ModelInfo } from "./services/modelService";
+import { useWorkflowExecution } from "./runtime/WorkflowExecutionContext";
+import TextInputWithVariables from "./components/TextInputWithVariables";
 import toast from "react-hot-toast";
 
 interface BaseCardProps {
@@ -64,6 +66,7 @@ export function InputNode({ data, id }: NodeProps) {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const { updateNodeData } = useReactFlow();
   const { getNodes, setNodes } = useReactFlow();
+  const { replaceVariables } = useWorkflowExecution();
 
   // Sincronizar estado local cuando data cambie (al cargar flujo guardado)
   React.useEffect(() => {
@@ -118,21 +121,23 @@ export function InputNode({ data, id }: NodeProps) {
           </span>
         </div>
 
-        {/* Textarea */}
-        <textarea
-          value={text}
-          onChange={(e) => {
-            const newText = e.target.value;
-            setText(newText);
-            // Actualizar los datos del nodo para que se guarden
-            updateNodeData(id, { text: newText });
-          }}
+        {/* Text Input with Variables */}
+        <div
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
-          className="w-full p-2 border border-blue-200 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-transparent resize-none text-xs transition-all duration-200"
-          rows={getRows()}
-          placeholder="Escribe tu prompt aquí..."
-        />
+        >
+          <TextInputWithVariables
+            value={text}
+            onChange={(newText) => {
+              setText(newText);
+              // Actualizar los datos del nodo para que se guarden
+              updateNodeData(id, { text: newText });
+            }}
+            className="border-blue-200 focus:ring-blue-500 text-xs transition-all duration-200"
+            rows={getRows()}
+            placeholder="Escribe tu prompt aquí..."
+          />
+        </div>
 
         {/* Action bar */}
         <div className="flex justify-between mt-3">

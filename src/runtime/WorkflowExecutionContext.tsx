@@ -14,6 +14,14 @@ export interface NodeExecutionState {
   logs?: string[];
 }
 
+export interface Variable {
+  name: string;
+  value: string;
+  type: 'static' | 'runtime' | 'dynamic';
+  description?: string;
+  category?: string;
+}
+
 export interface WorkflowState {
   isExecuting: boolean;
   currentNodeId?: string;
@@ -28,6 +36,9 @@ export interface WorkflowState {
   executionOrder: string[];
   startTime?: Date;
   endTime?: Date;
+  // Variables management (integrated like Flowise)
+  variables: Variable[];
+  workflowVariables: Record<string, any>;
 }
 
 export interface WorkflowExecutionContextType {
@@ -52,6 +63,15 @@ export interface WorkflowExecutionContextType {
   isNodeExecuting: (nodeId: string) => boolean;
   getNodeState: (nodeId: string) => NodeExecutionState;
   canExecuteNode: (nodeId: string) => boolean;
+
+  // Variables management (Flowise-style integrated)
+  setVariable: (name: string, value: string, type?: Variable['type'], description?: string) => void;
+  getVariable: (name: string) => Variable | undefined;
+  deleteVariable: (name: string) => void;
+  replaceVariables: (text: string) => string;
+  getAvailableVariables: () => Variable[];
+  setWorkflowVariable: (name: string, value: any) => void;
+  getWorkflowVariable: (name: string) => any;
 }
 
 const WorkflowExecutionContext = createContext<WorkflowExecutionContextType | null>(null);
@@ -69,16 +89,53 @@ interface WorkflowExecutionProviderProps {
 }
 
 export function WorkflowExecutionProvider({ children }: WorkflowExecutionProviderProps) {
-  const [workflowState, setWorkflowState] = useState<WorkflowState>({
-    isExecuting: false,
-    executionId: '',
-    nodeStates: {},
-    globalData: {},
-    // Flowise-style state initialization
-    flowState: {},
-    persistState: false,
-    ephemeralMemory: false,
-    executionOrder: []
+  const [workflowState, setWorkflowState] = useState<WorkflowState>(() => {
+    // Initialize with system variables like Flowise
+    const systemVariables: Variable[] = [
+      {
+        name: 'currentDate',
+        value: new Date().toLocaleDateString(),
+        type: 'dynamic',
+        description: 'Current date in local format',
+        category: 'System'
+      },
+      {
+        name: 'currentTime',
+        value: new Date().toLocaleTimeString(),
+        type: 'dynamic',
+        description: 'Current time in local format',
+        category: 'System'
+      },
+      {
+        name: 'timestamp',
+        value: Date.now().toString(),
+        type: 'dynamic',
+        description: 'Current timestamp in milliseconds',
+        category: 'System'
+      },
+      {
+        name: 'sessionId',
+        value: `session_${Date.now()}`,
+        type: 'dynamic',
+        description: 'Unique session identifier',
+        category: 'Session'
+      }
+    ];
+
+    return {
+      isExecuting: false,
+      executionId: '',
+      nodeStates: {},
+      globalData: {},
+      // Flowise-style state initialization
+      flowState: {},
+      persistState: false,
+      ephemeralMemory: false,
+      executionOrder: [],
+      // Variables integrated like Flowise
+      variables: systemVariables,
+      workflowVariables: {}
+    };
   });
 
   const startExecution = useCallback(async (startNodeId: string) => {
@@ -305,6 +362,120 @@ export function WorkflowExecutionProvider({ children }: WorkflowExecutionProvide
     return !state || state.status === 'idle' || state.status === 'completed';
   }, [workflowState.nodeStates]);
 
+  // Variables management functions (integrated like Flowise)
+  const setVariable = useCallback((name: string, value: string, type: Variable['type'] = 'static', description?: string) => {
+    setWorkflowState(prev => {
+      const existingIndex = prev.variables.findIndex(v => v.name === name);
+      if (existingIndex >= 0) {
+        // Update existing variable
+        const newVariables = [...prev.variables];
+        newVariables[existingIndex] = { ...newVariables[existingIndex], value, type, description: description || newVariables[existingIndex].description };
+        return { ...prev, variables: newVariables };
+      }
+      // Add new variable
+      return {
+        ...prev,
+        variables: [...prev.variables, { name, value, type, description, category: 'User' }]
+      };
+    });
+  }, []);
+
+  const getVariable = useCallback((name: string) => {
+    return workflowState.variables.find(v => v.name === name);
+  }, [workflowState.variables]);
+
+  const deleteVariable = useCallback((name: string) => {
+    setWorkflowState(prev => ({
+      ...prev,
+      variables: prev.variables.filter(v => v.name !== name || v.type === 'dynamic')
+    }));
+  }, []);
+
+  const replaceVariables = useCallback((text: string): string => {
+    let result = text;
+
+    // Replace {{variableName}} or {{flowState.key}} syntax (true Flowise style)
+    const variableRegex = /\{\{([a-zA-Z0-9_.]+)\}\}/g;
+    result = result.replace(variableRegex, (match, varName) => {
+      // First check in defined variables
+      const variable = workflowState.variables.find(v => v.name === varName);
+      if (variable) {
+        return variable.value;
+      }
+
+      // Check if it's a flowState variable (e.g., flowState.topic)
+      if (varName.startsWith('flowState.')) {
+        const flowKey = varName.substring(10); // Remove 'flowState.' prefix
+        const flowValue = workflowState.flowState[flowKey];
+        if (flowValue !== undefined) {
+          return String(flowValue);
+        }
+      }
+
+      // Then check in workflow/runtime variables
+      const value = workflowState.workflowVariables[varName];
+      if (value !== undefined) {
+        return String(value);
+      }
+
+      // Return unchanged if not found
+      return match;
+    });
+
+    return result;
+  }, [workflowState.variables, workflowState.workflowVariables, workflowState.flowState]);
+
+  const getAvailableVariables = useCallback(() => {
+    // Start with base variables
+    let allVariables = [...workflowState.variables];
+
+    // Add flowState variables dynamically
+    Object.entries(workflowState.flowState).forEach(([key, value]) => {
+      // Don't add if it already exists in base variables
+      if (!allVariables.find(v => v.name === `flowState.${key}`)) {
+        allVariables.push({
+          name: `flowState.${key}`,
+          value: String(value || ''),
+          type: 'runtime',
+          description: `Flow state variable: ${key}`,
+          category: 'Flow State'
+        });
+      }
+    });
+
+    // Add workflowVariables as well
+    Object.entries(workflowState.workflowVariables).forEach(([key, value]) => {
+      if (!allVariables.find(v => v.name === key)) {
+        allVariables.push({
+          name: key,
+          value: String(value || ''),
+          type: 'runtime',
+          description: `Workflow variable: ${key}`,
+          category: 'Workflow'
+        });
+      }
+    });
+
+    return allVariables.sort((a, b) => {
+      // Sort by category, then by name
+      if (a.category !== b.category) {
+        return (a.category || 'User').localeCompare(b.category || 'User');
+      }
+      return a.name.localeCompare(b.name);
+    });
+  }, [workflowState.variables, workflowState.flowState, workflowState.workflowVariables]);
+
+  const setWorkflowVariable = useCallback((name: string, value: any) => {
+    setWorkflowState(prev => ({
+      ...prev,
+      workflowVariables: { ...prev.workflowVariables, [name]: value }
+    }));
+  }, []);
+
+  const getWorkflowVariable = useCallback((name: string) => {
+    return workflowState.workflowVariables[name];
+  }, [workflowState.workflowVariables]);
+
   const contextValue: WorkflowExecutionContextType = {
     workflowState,
     startExecution,
@@ -320,7 +491,15 @@ export function WorkflowExecutionProvider({ children }: WorkflowExecutionProvide
     mergeRuntimeState,
     isNodeExecuting,
     getNodeState,
-    canExecuteNode
+    canExecuteNode,
+    // Variables management (integrated like Flowise)
+    setVariable,
+    getVariable,
+    deleteVariable,
+    replaceVariables,
+    getAvailableVariables,
+    setWorkflowVariable,
+    getWorkflowVariable
   };
 
   return (

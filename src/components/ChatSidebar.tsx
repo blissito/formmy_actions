@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   FiMessageCircle,
   FiSend,
@@ -13,7 +14,8 @@ import {
   FiTrash2,
   FiChevronLeft,
   FiChevronRight,
-  FiSettings
+  FiSettings,
+  FiX
 } from 'react-icons/fi';
 import { RiRobot2Line } from 'react-icons/ri';
 import { useWorkflowExecution } from '../runtime/WorkflowExecutionContext';
@@ -198,21 +200,22 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
     }
   };
 
-  return (
+  return createPortal(
     <>
-      {/* Toggle Button */}
+      {/* Chat Toggle Button - Always visible in bottom right */}
       <button
         onClick={onToggle}
-        className="fixed right-0 top-1/2 -translate-y-1/2 z-40 bg-white border border-gray-300 rounded-l-lg p-3 shadow-lg hover:bg-gray-50 transition-all"
-        style={{ right: isOpen ? '384px' : '0' }}
+        className={`fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg transition-all z-[9999] ${
+          isOpen ? 'translate-x-[-416px]' : 'translate-x-0'
+        }`}
         title={isOpen ? "Cerrar chat" : "Abrir chat"}
       >
-        {isOpen ? <FiChevronRight size={20} /> : <FiChevronLeft size={20} />}
+        {isOpen ? <FiX size={20} /> : <FiMessageCircle size={20} />}
       </button>
 
-      {/* Chat Sidebar */}
+      {/* Chat Sidebar Panel - Slides from right */}
       <div
-        className={`fixed top-0 right-0 h-full w-96 bg-white border-l border-gray-300 shadow-xl transition-transform duration-300 z-30 flex flex-col ${
+        className={`fixed top-0 right-0 h-screen w-96 bg-white border-l border-gray-300 shadow-xl z-[9998] flex flex-col transition-transform duration-300 ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -220,64 +223,60 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
         <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-green-50">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-green-500 flex items-center justify-center text-white">
-                <FiMessageCircle size={20} />
+              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-green-500 flex items-center justify-center text-white">
+                <FiMessageCircle size={16} />
               </div>
               <div>
                 <h3 className="font-semibold text-gray-800">Chat de Prueba</h3>
                 <p className="text-xs text-gray-500">
-                  {workflowState.isExecuting ? 'Workflow ejecutándose...' : 'Listo para probar'}
+                  {workflowState.isExecuting ? 'Ejecutándose...' : 'Listo'}
                 </p>
               </div>
             </div>
-            <button
-              onClick={clearChat}
-              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-              title="Limpiar chat"
-            >
-              <FiTrash2 size={16} />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={clearChat}
+                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                title="Limpiar chat"
+              >
+                <FiTrash2 size={16} />
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Messages Area */}
+        {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
+            <div key={message.id} className="flex flex-col space-y-2">
               <div
-                className={`max-w-[80%] rounded-lg p-3 ${
-                  message.type === 'user'
-                    ? 'bg-blue-500 text-white'
-                    : message.type === 'bot'
-                    ? 'bg-gray-100 text-gray-800'
-                    : 'bg-yellow-50 text-yellow-800 border border-yellow-200'
-                }`}
+                className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                <div className="flex items-start gap-2">
-                  {message.type !== 'user' && (
-                    <div className="mt-0.5">
-                      {getMessageIcon(message.type)}
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <div className="text-sm whitespace-pre-wrap">
-                      {message.loading ? (
-                        <div className="flex items-center gap-2">
-                          <FiLoader className="animate-spin" size={14} />
-                          {message.content}
-                        </div>
-                      ) : (
-                        message.content
-                      )}
-                    </div>
-                    <div className={`text-xs mt-1 ${
+                <div
+                  className={`max-w-[80%] rounded-lg p-3 ${
+                    message.type === 'user'
+                      ? 'bg-blue-500 text-white'
+                      : message.type === 'bot'
+                      ? 'bg-gray-100 text-gray-800'
+                      : 'bg-yellow-50 text-yellow-800 border border-yellow-200'
+                  }`}
+                >
+                  <div className="text-sm whitespace-pre-wrap">
+                    {message.loading ? (
+                      <div className="flex items-center gap-2">
+                        <FiLoader className="animate-spin" size={14} />
+                        {message.content}
+                      </div>
+                    ) : (
+                      message.content
+                    )}
+                  </div>
+                  <div
+                    className={`text-xs mt-1 ${
                       message.type === 'user' ? 'text-blue-100' : 'text-gray-500'
-                    }`}>
-                      {formatTimestamp(message.timestamp)}
-                    </div>
+                    }`}
+                  >
+                    {formatTimestamp(message.timestamp)}
                   </div>
                 </div>
               </div>
@@ -286,17 +285,17 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Area */}
-        <div className="p-4 border-t border-gray-200 bg-gray-50">
-          <div className="flex items-center gap-2">
+        {/* Input */}
+        <div className="p-4 border-t border-gray-200">
+          <div className="flex gap-2">
             <input
               ref={inputRef}
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder={chatAgent ? "Escribe tu mensaje..." : "Configura API Key primero..."}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder={chatAgent ? "Escribe aquí..." : "Configura API Key"}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               disabled={isLoading || !chatAgent}
             />
             <button
@@ -307,15 +306,9 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
               <FiSend size={16} />
             </button>
           </div>
-
-          {/* Status Bar */}
-          {workflowState.executionId && (
-            <div className="mt-2 text-xs text-gray-500">
-              Sesión: {workflowState.executionId.slice(-8)}
-            </div>
-          )}
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 }

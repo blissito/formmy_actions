@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <rect width="32" height="32" rx="6" fill="#7c3aed"/>
+  <g transform="translate(6, 5)">
+    <!-- Head -->
+    <rect x="4" y="3" width="12" height="8" rx="2" fill="white"/>
+    <!-- Eyes -->
+    <circle cx="8" cy="7" r="1.5" fill="#7c3aed"/>
+    <circle cx="12" cy="7" r="1.5" fill="#7c3aed"/>
+    <!-- Antenna -->
+    <rect x="9" y="0" width="2" height="3" fill="white"/>
+    <circle cx="10" cy="0.5" r="1" fill="#fbbf24"/>
+    <!-- Body -->
+    <rect x="2" y="11" width="16" height="10" rx="2" fill="white"/>
+    <!-- Control Panel -->
+    <rect x="5" y="14" width="10" height="4" rx="1" fill="#e5e7eb"/>
+    <rect x="6" y="15" width="2" height="2" rx="0.5" fill="#10b981"/>
+    <rect x="9" y="15" width="2" height="2" rx="0.5" fill="#3b82f6"/>
+    <rect x="12" y="15" width="2" height="2" rx="0.5" fill="#ef4444"/>
+    <!-- Arms -->
+    <rect x="0" y="13" width="2" height="6" rx="1" fill="white"/>
+    <rect x="18" y="13" width="2" height="6" rx="1" fill="white"/>
+  </g>
+</svg>

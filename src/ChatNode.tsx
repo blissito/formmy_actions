@@ -262,7 +262,7 @@ export function ChatNode({ data, id }: NodeProps) {
                         {message.content}
                       </div>
                       <div className="text-xs text-gray-500 mt-1">
-                        {message.timestamp.toLocaleTimeString()}
+                        {message.timestamp instanceof Date ? message.timestamp.toLocaleTimeString() : new Date(message.timestamp).toLocaleTimeString()}
                         {message.metadata?.processingTime && (
                           <span className="ml-2">⏱ {message.metadata.processingTime}</span>
                         )}

@@ -240,8 +240,6 @@ function FlowCanvas({
     useGlobalConfig();
   const [showGlobalSettings, setShowGlobalSettings] = useState(false);
 
-  // Estado del chat sidebar
-  const [isChatOpen, setIsChatOpen] = useState(false);
 
   // Estado para cambios no guardados
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -651,7 +649,7 @@ function FlowCanvas({
   }, [hasUnsavedChanges, saveFlow]);
 
   return (
-    <div className="flex w-screen h-screen bg-gray-50">
+    <div className="flex w-screen h-screen bg-gray-50 relative">
       {/* Nueva Barra de Herramientas en Español - Estilo Flowise */}
       <BarraDeHerramientas
         isExecuting={isExecuting}
@@ -666,7 +664,10 @@ function FlowCanvas({
       <div
         className="flex-1 react-flow-container"
         ref={reactFlowWrapper}
-        style={{ width: "calc(100vw - 288px)", height: "100vh" }}
+        style={{
+          width: 'calc(100vw - 288px)',
+          height: "100vh"
+        }}
       >
         <ReactFlow
           nodes={nodes}
@@ -828,11 +829,6 @@ function FlowCanvas({
         }}
       /> */}
 
-      {/* Chat Sidebar - Flowise Style Fixed Panel */}
-      <ChatSidebar
-        isOpen={isChatOpen}
-        onToggle={() => setIsChatOpen(!isChatOpen)}
-      />
     </div>
   );
 }
@@ -844,10 +840,18 @@ interface AppProps {
 }
 
 function App({ onSave, onExecute, readonly }: AppProps) {
+  const [isChatOpen, setIsChatOpen] = useState(false);
+
   return (
     <ReactFlowProvider>
       <WorkflowExecutionProvider>
         <FlowCanvas onSave={onSave} onExecute={onExecute} readonly={readonly} />
+
+        {/* Chat Sidebar - Rendered as Portal outside ReactFlow */}
+        <ChatSidebar
+          isOpen={isChatOpen}
+          onToggle={() => setIsChatOpen(!isChatOpen)}
+        />
       </WorkflowExecutionProvider>
     </ReactFlowProvider>
   );

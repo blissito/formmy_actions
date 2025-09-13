@@ -245,48 +245,154 @@ Tareas Completadas:
 - 🔄 **Streaming Support** - Updates en tiempo real
 - 🧠 **Memory Management** - Contexto persistente entre interacciones
 
-## 🚀 **FASE 5 - ROADMAP PRÓXIMAS 2-3 SEMANAS**
+## 🚀 **FASE 5 - FLOWISE NODE EXTRACTION PLAN**
 
-### 🎯 **Objetivo Final: PRODUCTION-READY AGENT PLATFORM**
+### 🎯 **Objetivo: AI Agents Tab Basado en Flowise Research**
 
-### 🥇 **SEMANA 1: Agent Tools Integration**
+**Basado en investigación exhaustiva de 100+ nodos de Flowise, implementar versión simplificada con máximo impacto.**
+
+## 🔥 **PLAN DE IMPLEMENTACIÓN FLOWISE NODES**
+
+### 🥇 **SEMANA 1: Tools Básicos (6 nodos críticos)**
 ```
-⭐ PRIORIDAD: ALTA
+⭐ PRIORIDAD: CRÍTICA
 🎯 IMPACTO: Agents can actually DO things
+🏆 ROI: 80% del valor con 20% de la complejidad
 
-Tareas:
-- [ ] Integrar Calculator tool para agentes
-- [ ] Web Search tool para ReAct Agent
-- [ ] File operations tools
-- [ ] API calling tool genérico
-- [ ] Testing completo de agent execution
+Nodos a Implementar:
+- [ ] WebBrowser       → Navegación web completa
+- [ ] Calculator       → Operaciones matemáticas
+- [ ] ReadFile         → Lectura de archivos
+- [ ] WriteFile        → Escritura de archivos
+- [ ] CurrentDateTime  → Utilidades de tiempo/fecha
+- [ ] CustomFunction   → Ejecución JavaScript custom
 ```
 
-### 🥈 **SEMANA 2: Advanced Agent Features**
+### 🥈 **SEMANA 2: Agent Workflows (4 nodos AgentFlow v2)**
 ```
 ⭐ PRIORIDAD: ALTA
-🎯 IMPACTO: Professional agent capabilities
+🎯 IMPACTO: Professional agent orchestration
+🏆 DIFERENCIADOR: Unique Flowise workflow patterns
 
-Tareas:
-- [ ] Multi-agent coordination (agent handoffs)
-- [ ] Agent memory persistence (database)
-- [ ] Agent performance monitoring
-- [ ] Error handling y retry logic
-- [ ] Agent workflow templates
+Nodos AgentFlow v2:
+- [ ] HumanInput      → Human-in-the-loop (CRÍTICO)
+- [ ] Condition       → Branching lógico
+- [ ] ExecuteFlow     → Sub-workflows anidados
+- [ ] ToolAgent       → Agent enfocado en tools
 ```
 
-### 🥉 **SEMANA 3: Production Polish**
+### 🥉 **SEMANA 3: Integration & Memory (4 nodos avanzados)**
 ```
 ⭐ PRIORIDAD: MEDIA
-🎯 IMPACTO: Ready for production deployment
+🎯 IMPACTO: Enterprise-ready capabilities
+🏆 ESCALABILIDAD: Production-ready features
 
-Tareas:
-- [ ] Comprehensive testing suite para agentes
-- [ ] Documentation completa de agent system
-- [ ] Performance optimizations
-- [ ] Security audit para agent execution
-- [ ] NPM package update v1.1.0
+Nodos Avanzados:
+- [ ] GoogleSearchAPI           → Búsqueda web
+- [ ] WebScraperTool           → Extracción contenido web
+- [ ] RequestsGet/Post         → HTTP calls
+- [ ] ConversationSummaryBufferMemory → Memoria eficiente
 ```
+
+## 📊 **TOP 10 NODOS - MÁXIMO IMPACTO**
+
+```typescript
+const topPriorityNodes = [
+  // 🤖 Agents (2)
+  'ToolAgent',           // Agent enfocado en herramientas
+  'CustomFunction',      // JavaScript execution
+
+  // 🔧 Tools (4)
+  'WebBrowser',          // Web navigation
+  'Calculator',          // Math operations
+  'ReadFile',            // File reading
+  'WriteFile',           // File writing
+
+  // 🔄 Workflow (3)
+  'HumanInput',          // 🔥 CRÍTICO: Human-in-the-loop
+  'Condition',           // Conditional branching
+  'ExecuteFlow',         // Sub-workflows
+
+  // 🌐 Integration (1)
+  'GoogleSearchAPI'      // Web search
+];
+```
+
+## 🎨 **PATRONES DE SIMPLIFICACIÓN**
+
+### **1. Consolidar Categorías**
+```
+Flowise: 25+ categorías → formmy: 4 categorías simplificadas
+
+✅ "Core Agents"     → ConversationalAgent, ReActAgent, ToolAgent
+✅ "Essential Tools" → Web, File, Math, API tools
+✅ "Memory Systems"  → Buffer, Summary, Redis
+✅ "Workflow Logic"  → Start, Condition, HumanInput
+```
+
+### **2. Defaults Inteligentes**
+```typescript
+// En lugar de exponer todas las configuraciones de Flowise
+const simplifiedAgentConfig = {
+  type: 'ConversationalAgent',
+  memory: 'auto',        // Auto-select mejor memoria
+  tools: 'suggested',    // Suggest herramientas relevantes
+  streaming: true,       // Siempre streaming
+  humanInLoop: false     // Configurable human intervention
+};
+```
+
+### **3. AgentFlow v2 Pattern**
+```typescript
+// Implementar workflow pattern único de Flowise
+const agentFlowNodes = {
+  Start: 'Punto entrada workflow',
+  HumanInput: 'Pausa para input humano',
+  Condition: 'Branching basado en condiciones',
+  ToolAgent: 'Ejecuta herramientas específicas',
+  ExecuteFlow: 'Invoca sub-workflows',
+  DirectReply: 'Respuesta terminal'
+};
+```
+
+## 🔥 **NODO GAME-CHANGER: HumanInput**
+
+**🏆 ÚNICO EN EL MERCADO:**
+- Permite **human-in-the-loop** workflows
+- **Pausa** ejecución para input humano
+- **Resume** con contexto completo preservado
+- **Diferenciador clave** vs competencia
+- **Casos de uso**: Aprovaciones, validaciones, inputs complejos
+
+## 🎯 **MILESTONE TARGETS**
+
+### **Semana 1 Success Metrics:**
+- [ ] 6 herramientas básicas funcionando
+- [ ] Agents pueden usar Calculator, Files, Web, DateTime
+- [ ] CustomFunction ejecuta JavaScript arbitrary
+
+### **Semana 2 Success Metrics:**
+- [ ] HumanInput workflow funcional
+- [ ] Conditional branching operativo
+- [ ] Sub-workflows con ExecuteFlow
+- [ ] ToolAgent especializados
+
+### **Semana 3 Success Metrics:**
+- [ ] GoogleSearch integrado
+- [ ] WebScraper extrayendo contenido
+- [ ] HTTP requests funcionales
+- [ ] Memory management avanzado
+
+## 📈 **IMPACTO PROYECTADO**
+
+**🎯 Con estos 14 nodos tendremos:**
+- **90% funcionalidad** de Flowise agents
+- **10% complejidad** de implementación
+- **100% compatibilidad** con patrones Flowise
+- **Único sistema** con HumanInput visual
+- **Primera librería** con multi-framework + Flowise patterns
+
+**💡 REGLA DE ORO: Seguir arquitecturas probadas de Flowise, no reinventar**
 
 ## 🎯 **OBJETIVO FINAL - FORMMY AGENTS PLATFORM**
 
@@ -362,6 +468,7 @@ formmy-actions/
 - 🐙 **GitHub**: https://github.com/blissito/formmy_actions
 - 🌐 **formmy.app**: https://formmy.app (origen del proyecto)
 - 🏢 **Fixter.org**: https://fixter.org (desarrolladores)
+- 🔍 **FlowiseChatEmbed** (referencia): `/tmp/flowise-repo/` - Repositorio clonado para referencia de componentes de chat
 
 ## 📝 Estado de Tareas
 

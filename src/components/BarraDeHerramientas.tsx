@@ -222,7 +222,7 @@ export default function BarraDeHerramientas({
   };
 
   return (
-    <div className="w-80 bg-white border-r border-gray-200 flex flex-col h-full">
+    <div className="w-80 min-w-80 max-w-80 bg-white border-r border-gray-200 flex flex-col h-full overflow-hidden">
 
       {/* Header - Estilo Flowise */}
       <div className="p-6 border-b border-gray-200">
@@ -355,8 +355,8 @@ export default function BarraDeHerramientas({
       </div>
 
       {/* Lista de Nodos - Accordion Style Flowise */}
-      <div className="flex-1 overflow-y-auto" ref={scrollRef} data-sidebar>
-        <div className="px-4 pb-4">
+      <div className="flex-1 overflow-y-auto px-4" ref={scrollRef} data-sidebar>
+        <div className="pb-4">
           {Object.entries(getFilteredNodes()).map(([categoryId, category]) => {
             if (category.nodes.length === 0) return null;
 
@@ -405,7 +405,7 @@ export default function BarraDeHerramientas({
                             {node.description}
                           </div>
                         </div>
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="w-[14px] h-[14px] flex items-center justify-center">
                           <FiPlus className="text-blue-500" size={14} />
                         </div>
                       </div>
@@ -427,10 +427,7 @@ export default function BarraDeHerramientas({
 
         <div className="text-center">
           <div className="text-xs text-gray-500 mb-1">
-            🤖 Desarrollado con ❤️ por Fixter.org
-          </div>
-          <div className="text-xs text-gray-400">
-            Arquitectura Flowise v2 • En Mexicano 🇲🇽
+            Desarrollado por Fixter.org
           </div>
         </div>
       </div>

@@ -125,7 +125,7 @@ export const GeneratedComponentsSidebar: React.FC<GeneratedComponentsSidebarProp
                   {frameworkComponents.map(component => (
                     <div
                       key={`${component.framework}-${component.name}`}
-                      className={`p-3 border-2 border-dashed rounded-xl cursor-grab active:cursor-grabbing transition-all hover:shadow-lg hover:scale-105 bg-gradient-to-br from-white to-gray-50`}
+                      className={`p-3 border-2 border-dashed rounded-xl cursor-grab active:cursor-grabbing transition-all hover:shadow-lg bg-gradient-to-br from-white to-gray-50`}
                       style={{ borderColor: component.ui.color }}
                       draggable={component.available}
                       onDragStart={(event) => onDragStart(event, 'generated', component)}

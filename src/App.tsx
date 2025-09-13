@@ -58,6 +58,7 @@ import InlineBetaBadge from "./InlineBetaBadge";
 import FrameworkSidebar from "./components/FrameworkSidebar";
 import BarraDeHerramientas from "./components/BarraDeHerramientas";
 import { ChatSidebar } from "./components/ChatSidebar";
+import { ChatBubble } from "./components/ChatBubble";
 
 import { cn } from './utils/cn';
 import { WorkflowExecutionProvider } from './runtime/WorkflowExecutionContext';
@@ -693,27 +694,31 @@ function FlowCanvas({
             showFitView={true}
             showInteractive={true}
           />
-          <MiniMap
-            className="bg-white/90 border border-gray-200 rounded-3xl shadow-2xl backdrop-blur-sm"
-            nodeColor={(node) => {
-              switch (node.type) {
-                case "input":
-                  return "#3b82f6";
-                case "agent":
-                  return "#f59e0b";
-                case "output":
-                  return "#10b981";
-                case "prompt":
-                  return "#8b5cf6";
-                case "function":
-                  return "#ef4444";
-                default:
-                  return "#6b7280";
+          {/* Chat Bubble - Positioned in bottom right */}
+          <ChatBubble
+            title="Test Workflow"
+            welcomeMessage="Hi! I can help you test your workflow. Send me a message to execute the current flow."
+            placeholder="Type a message to test the workflow..."
+            onSendMessage={async (message) => {
+              // Execute the workflow when user sends a message
+              try {
+                await executeFlow();
+
+                // Get the last output from the output nodes
+                const outputNodes = nodes.filter(n => n.type === "output");
+                if (outputNodes.length > 0) {
+                  const outputNode = outputNodes[0];
+                  if (outputNode.data.result) {
+                    return `Workflow executed successfully! Result: ${outputNode.data.result}`;
+                  }
+                }
+
+                return "Workflow executed successfully!";
+              } catch (error) {
+                console.error('Workflow execution error:', error);
+                return `Sorry, there was an error executing the workflow: ${error instanceof Error ? error.message : String(error)}`;
               }
             }}
-            maskColor="rgba(139, 92, 246, 0.1)"
-            pannable={true}
-            zoomable={true}
           />
           <Background
             variant={BackgroundVariant.Dots}

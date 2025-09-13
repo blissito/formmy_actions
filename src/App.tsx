@@ -57,7 +57,7 @@ import { RiRobot2Line } from "react-icons/ri";
 import InlineBetaBadge from "./InlineBetaBadge";
 import FrameworkSidebar from "./components/FrameworkSidebar";
 import BarraDeHerramientas from "./components/BarraDeHerramientas";
-import { ChatPopup } from "./components/ChatPopup";
+import { ChatSidebar } from "./components/ChatSidebar";
 
 import { cn } from './utils/cn';
 import { WorkflowExecutionProvider } from './runtime/WorkflowExecutionContext';
@@ -239,6 +239,9 @@ function FlowCanvas({
   const { config: globalConfig, saveConfig: saveGlobalConfig } =
     useGlobalConfig();
   const [showGlobalSettings, setShowGlobalSettings] = useState(false);
+
+  // Estado del chat sidebar
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   // Estado para cambios no guardados
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -825,13 +828,10 @@ function FlowCanvas({
         }}
       /> */}
 
-      {/* Chat Popup - Flowise Style */}
-      <ChatPopup
-        workflowId="current"
-        onOpenChange={(isOpen) => {
-          // Optional: Handle chat state changes
-          console.log('Chat is now:', isOpen ? 'open' : 'closed');
-        }}
+      {/* Chat Sidebar - Flowise Style Fixed Panel */}
+      <ChatSidebar
+        isOpen={isChatOpen}
+        onToggle={() => setIsChatOpen(!isChatOpen)}
       />
     </div>
   );

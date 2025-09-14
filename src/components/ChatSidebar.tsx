@@ -36,6 +36,7 @@ interface Message {
   content: string;
   timestamp: Date;
   loading?: boolean;
+  isStreaming?: boolean;
   agentReasoning?: AgentReasoning[];
   usedTools?: any[];
   sourceDocuments?: any[];
@@ -161,6 +162,19 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
             response: result?.response
           });
 
+          // Update message with streaming response in real-time
+          if (result?.isStreaming && result?.response) {
+            currentMessage = {
+              ...currentMessage,
+              content: result.response,
+              loading: true,
+              isStreaming: true
+            };
+            setMessages(prev => prev.map(m =>
+              m.id === loadingMessage.id ? currentMessage : m
+            ));
+          }
+
           // Update message with trace info in real-time SOLO si hay reasoning
           if (result?.agentReasoning && result.agentReasoning.length > 0) {
             currentMessage = {
@@ -177,7 +191,8 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
             currentMessage = {
               ...currentMessage,
               agentReasoning: undefined,
-              loading: false
+              loading: false,
+              isStreaming: false
             };
             setMessages(prev => prev.map(m =>
               m.id === loadingMessage.id ? currentMessage : m
@@ -338,7 +353,12 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
                   ))}
 
                   <div className="text-xs whitespace-pre-wrap">
-                    {message.loading ? (
+                    {message.loading && message.isStreaming ? (
+                      <div className="flex flex-col gap-1">
+                        <span className="text-xs">{message.content}</span>
+                        <span className="text-xs opacity-70 animate-pulse">▊</span>
+                      </div>
+                    ) : message.loading ? (
                       <div className="flex items-center gap-2">
                         <FiLoader className="animate-spin" size={12} />
                         <span className="text-xs">{message.content}</span>

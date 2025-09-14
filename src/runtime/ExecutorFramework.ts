@@ -78,7 +78,6 @@ export class ExecutorRegistry {
 
   register(executor: ExecutorFramework): void {
     this.executors.set(executor.name, executor)
-    console.log(`[ExecutorRegistry] Registered framework: ${executor.displayName}`)
   }
 
   unregister(frameworkName: string): void {

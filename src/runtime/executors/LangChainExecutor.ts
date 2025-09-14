@@ -1,4 +1,4 @@
-import { ComponentExecutor, type ExecutionContext, type ExecutionResult, type RuntimeType } from '../ExecutionEngine';
+import { ComponentExecutor, type ExecutionContext, type ExecutionResult, type RuntimeType } from '../ComponentExecutor';
 
 export class LangChainExecutor extends ComponentExecutor {
   runtime: RuntimeType = 'langchain';

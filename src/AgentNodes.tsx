@@ -24,7 +24,9 @@ import {
   FiChevronDown,
   FiChevronUp,
 } from 'react-icons/fi';
-import { TbBrain } from 'react-icons/tb';
+import { TbBrain, TbRobot } from 'react-icons/tb';
+import { RiRobot2Fill, RiRobotFill } from 'react-icons/ri';
+import { GiRobotAntennas, GiArtificialIntelligence, GiRobotGolem } from 'react-icons/gi';
 
 // Agent execution statuses
 export type AgentStatus = 'idle' | 'running' | 'completed' | 'error' | 'paused';
@@ -652,8 +654,8 @@ export function ConversationalAgentNode({ data, id }: NodeProps) {
         )}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <div className="w-[30px] h-8 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white shadow-md relative">
-              <FiMessageCircle size={16} />
+            <div className="w-[40px] h-10 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white shadow-md relative">
+              <GiRobotGolem size={24} />
               {status === 'running' && (
                 <div
                   className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full animate-pulse"
@@ -667,15 +669,35 @@ export function ConversationalAgentNode({ data, id }: NodeProps) {
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></div>
               )}
             </div>
-            <div className="text-green-800 font-bold text-sm">
-              Conversational Agent
-              {status === 'running' && (
-                <span
-                  className="ml-1 text-amber-600 text-xs animate-pulse"
-                  style={{ animationDuration: "1.5s" }}
-                >
-                  (processing...)
-                </span>
+            <div className="flex flex-col gap-1">
+              <div className="text-green-800 font-bold text-sm">
+                Agente Conversacional
+                {status === 'running' && data?.isStreaming && (
+                  <span
+                    className="ml-1 text-green-600 text-xs animate-pulse"
+                    style={{ animationDuration: "1s" }}
+                  >
+                    (streaming...)
+                  </span>
+                )}
+                {status === 'running' && !data?.isStreaming && (
+                  <span
+                    className="ml-1 text-amber-600 text-xs animate-pulse"
+                    style={{ animationDuration: "1.5s" }}
+                  >
+                    (procesando...)
+                  </span>
+                )}
+              </div>
+              {!isConfigOpen && (
+                <div className="flex items-center gap-1 px-2 py-1">
+                  <div
+                    className="bg-white/90 text-gray-700 text-[10px] rounded-full font-medium border border-gray-200 shadow-sm"
+                    style={{ padding: '2px 12px' }}
+                  >
+                    {model}
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -864,12 +886,6 @@ export function ConversationalAgentNode({ data, id }: NodeProps) {
           </div>
         )}
 
-        <div className="text-gray-600 text-xs text-center font-medium">
-          Conversational AI Agent
-        </div>
-        <div className="text-gray-500 text-xs text-center">
-          Status: {status || 'idle'}
-        </div>
 
         {/* Global Workflow Info */}
         {workflowState.executionId && (

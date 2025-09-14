@@ -1,23 +1,5 @@
 import type { Node, Edge } from '@xyflow/react';
-
-export type RuntimeType = 'vercel-ai' | 'langchain' | 'typescript' | 'custom' | 'ffmpeg' | 'image-generator';
-
-export interface ExecutionContext {
-  nodeId: string;
-  inputs: Record<string, any>;
-  parameters: Record<string, any>;
-  framework: string;
-  componentName: string;
-}
-
-export interface ExecutionResult {
-  nodeId: string;
-  outputs: Record<string, any>;
-  status: 'success' | 'error' | 'running';
-  error?: string;
-  executionTime: number;
-  logs: string[];
-}
+import { ComponentExecutor, type ExecutionContext, type ExecutionResult, type RuntimeType } from './ComponentExecutor';
 
 export interface FlowExecution {
   flowId: string;
@@ -27,11 +9,6 @@ export interface FlowExecution {
   endTime?: Date;
 }
 
-export abstract class ComponentExecutor {
-  abstract runtime: RuntimeType;
-  abstract canExecute(context: ExecutionContext): boolean;
-  abstract execute(context: ExecutionContext): Promise<ExecutionResult>;
-}
 
 export class ExecutionEngine {
   private executors: Map<RuntimeType, ComponentExecutor> = new Map();
@@ -66,7 +43,8 @@ export class ExecutionEngine {
     try {
       // 1. Build execution graph
       const executionOrder = this.buildExecutionOrder(nodes, edges);
-      console.log(`📊 Execution order: ${executionOrder.map(n => n.id).join(' → ')}`);
+      console.log(`📊 Total nodes to execute: ${executionOrder.length}`);
+      console.log(`📊 Execution order: ${executionOrder.map(n => `${n.id}(${n.type})`).join(' → ')}`);
 
       // 2. Execute nodes in order
       for (const node of executionOrder) {
@@ -252,33 +230,12 @@ export class ExecutionEngine {
   }
 
   private registerBuiltinExecutors(): void {
-    console.log('🔧 Registering built-in executors...');
-    
-    // Import and register VercelAI executor
-    import('./executors/VercelAIExecutor').then(({ VercelAIExecutor }) => {
-      const vercelExecutor = new VercelAIExecutor();
-      this.registerExecutor(vercelExecutor);
-      console.log('✅ Registered VercelAI executor');
+    // Register ONLY FlowiseSimple executor (the working one)
+    import('./FlowiseSimpleExecutor').then(({ FlowiseSimpleExecutor }) => {
+      const flowiseExecutor = new FlowiseSimpleExecutor();
+      this.registerExecutor(flowiseExecutor);
     }).catch(error => {
-      console.warn('⚠️ Failed to register VercelAI executor:', error);
-    });
-    
-    // Register FFmpeg executor
-    import('../tools/FFmpegTool').then(({ FFmpegExecutor }) => {
-      const ffmpegExecutor = new FFmpegExecutor();
-      this.registerExecutor(ffmpegExecutor);
-      console.log('✅ Registered FFmpeg executor');
-    }).catch(error => {
-      console.warn('⚠️ Failed to register FFmpeg executor:', error);
-    });
-    
-    // Register Image Generator executor
-    import('../tools/ImageGeneratorTool').then(({ ImageGeneratorExecutor }) => {
-      const imageExecutor = new ImageGeneratorExecutor();
-      this.registerExecutor(imageExecutor);
-      console.log('✅ Registered ImageGenerator executor');
-    }).catch(error => {
-      console.warn('⚠️ Failed to register ImageGenerator executor:', error);
+      console.warn('⚠️ Failed to register FlowiseSimple executor:', error);
     });
   }
 }

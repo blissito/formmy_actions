@@ -245,13 +245,134 @@ Tareas Completadas:
 - 🔄 **Streaming Support** - Updates en tiempo real
 - 🧠 **Memory Management** - Contexto persistente entre interacciones
 
-## 🚀 **FASE 5 - FLOWISE NODE EXTRACTION PLAN**
+## 🎯 **NUEVA: FASE 5 COMPLETADA ✅**
+
+### ✅ **Chat & SystemPrompt Integration - COMPLETADO**
+```
+⭐ PRIORIDAD: CRÍTICA → ✅ COMPLETADO
+🎯 IMPACTO: Chat now fully functional with custom system prompts
+
+Problemas Resueltos:
+- [x] CRÍTICO: SystemPrompt personalizado no se usaba
+- [x] Chat usaba hardcodeado "You are a helpful AI assistant."
+- [x] Multiple executors causaban confusión
+- [x] Logs de debugging saturaban consola
+- [x] UI del chat necesitaba mejoras visuales
+```
+
+### ✅ **Soluciones Implementadas**
+- 🔧 **SystemPrompt Fix** - FlowiseSimpleExecutor ahora lee `systemMessage` del nodo
+- 🎨 **UI Mejorada** - Badge con hora del mensaje + texto más pequeño (`text-xs`)
+- 🧹 **Chat Unificado** - Eliminado SimpleChatAgent, solo FlowiseSimpleExecutor
+- 📝 **Logs Limpios** - Removidos todos los logs de debugging innecesarios
+- ⚡ **Trace Ready** - AgentReasoningBubble preparado para traces de ejecución
+
+### ✅ **Funcionalidades Nuevas**
+- 💬 **SystemPrompt Personalizado** - El chat ahora usa el prompt configurado en el nodo
+- 🕒 **Badge de Tiempo** - Cada mensaje muestra la hora en un badge estilizado
+- 📱 **UI Responsiva** - Texto más legible y componentes mejor proporcionados
+- 🔄 **Trace Preparation** - UI preparada para mostrar traces de ejecución (AgentReasoningBubble)
+
+## 🚀 **SIGUIENTE: FASE 6 - FLOWSTATE INTEGRATION**
+
+### 🎯 **Objetivo: FlowState Management como Flowise**
+```
+⭐ PRIORIDAD: ALTA
+🎯 IMPACTO: State management between workflow nodes
+🏆 DIFERENCIADOR: Context passing between agent executions
+
+Tareas Planificadas:
+- [ ] FlowState persistence entre ejecuciones
+- [ ] Variable passing entre nodos
+- [ ] Memory context management
+- [ ] State visualization en UI
+- [ ] Export/import de workflow state
+```
+
+## 🚀 **FASE 7 - FLOWISE NODE EXTRACTION PLAN**
 
 ### 🎯 **Objetivo: AI Agents Tab Basado en Flowise Research**
 
 **Basado en investigación exhaustiva de 100+ nodos de Flowise, implementar versión simplificada con máximo impacto.**
 
 ## 🔥 **PLAN DE IMPLEMENTACIÓN FLOWISE NODES**
+
+### 🚨 **PASO 0: Motor de Ejecuciones (CRÍTICO - Debe resolverse PRIMERO)**
+```
+⭐ PRIORIDAD: MÁXIMA - BLOCKER
+🎯 PROBLEMA: Múltiples problemas en la ejecución actual
+🏆 IMPACTO: Sin esto, ningún nodo funcionará correctamente
+
+PROBLEMAS IDENTIFICADOS:
+- [ ] ExecutionEngine tiene inconsistencias de estado
+- [ ] AgentExecutor no se integra correctamente con ExecutorFramework
+- [ ] Streaming events no se propagan correctamente
+- [ ] Error handling es inconsistente entre executors
+- [ ] Memory management no persiste entre ejecuciones
+- [ ] Node state updates no se reflejan en UI
+- [ ] Tool validation falla silenciosamente
+- [ ] Async execution chains se rompen
+
+SOLUCIONES REQUERIDAS:
+- [ ] Refactor ExecutionEngine para consistencia de estado
+- [ ] Unificar AgentExecutor con ExecutorFramework interface
+- [ ] Implementar event system robusto para streaming
+- [ ] Standardizar error propagation across all executors
+- [ ] Fix memory persistence y state management
+- [ ] Ensure UI updates reflect real execution state
+- [ ] Add comprehensive tool validation with clear errors
+- [ ] Implement proper async/await chains sin race conditions
+```
+
+### 🛠️ **PASO 0.1: Diagnóstico Completo del Motor Actual**
+```
+⭐ AUDIT COMPLETO DEL SISTEMA DE EJECUCIÓN
+
+Archivos a revisar y diagnosticar:
+- [ ] /src/runtime/ExecutionEngine.ts - Motor legacy
+- [ ] /src/runtime/ExecutorFramework.ts - Interfaces base
+- [ ] /src/runtime/ExecutorRegistry.ts - Registry central
+- [ ] /src/runtime/executors/AgentExecutor.ts - Agent execution
+- [ ] /src/runtime/executors/SimpleAgentExecutor.ts - Simple agents
+- [ ] /src/runtime/executors/VercelAIExecutor.ts - Vercel integration
+- [ ] /src/runtime/executors/LlamaIndexExecutor.ts - LlamaIndex integration
+
+Problemas específicos a identificar:
+- [ ] Race conditions en async operations
+- [ ] Memory leaks en streaming
+- [ ] State inconsistencies entre UI y backend
+- [ ] Error swallowing sin propagation
+- [ ] Missing cleanup en failed executions
+```
+
+### 🔧 **PASO 0.2: Arquitectura Motor Unificado**
+```
+⭐ DISEÑO DE MOTOR ROBUSTO BASADO EN FLOWISE
+
+Patrones a implementar de Flowise:
+- [ ] Unified Execution Context - Estado global consistente
+- [ ] Event-Driven Architecture - Eventos claros para streaming
+- [ ] Executor Chain Pattern - Ejecución secuencial robusta
+- [ ] Error Recovery System - Retry logic y fallbacks
+- [ ] Memory State Management - Persistencia entre ejecuciones
+- [ ] Tool Validation Layer - Validación antes de execution
+- [ ] Real-time UI Updates - Sincronización UI-backend
+- [ ] Cancellation Support - Ability to stop ejecutions
+
+Estructura propuesta:
+/src/runtime/
+├── core/
+│   ├── ExecutionContext.ts      # Estado global unificado
+│   ├── ExecutionOrchestrator.ts # Coordinador principal
+│   ├── EventSystem.ts           # Sistema de eventos
+│   └── StateManager.ts          # Gestión estado UI
+├── validation/
+│   ├── NodeValidator.ts         # Validación nodos
+│   └── FlowValidator.ts         # Validación workflows
+└── executors/
+    ├── BaseExecutor.ts          # Base class común
+    └── [existing executors]     # Refactored to new base
+```
 
 ### 🥇 **SEMANA 1: Tools Básicos (6 nodos críticos)**
 ```
@@ -366,22 +487,51 @@ const agentFlowNodes = {
 
 ## 🎯 **MILESTONE TARGETS**
 
+### **PASO 0 Success Metrics (PREREQUISITO):**
+- [ ] ✅ Motor de ejecución 100% confiable
+- [ ] ✅ Zero race conditions en async operations
+- [ ] ✅ Error handling consistente en todos los executors
+- [ ] ✅ UI state sync perfecto con backend
+- [ ] ✅ Memory persistence funcional
+- [ ] ✅ Streaming events propagándose correctamente
+- [ ] ✅ Tool validation con errores claros
+- [ ] ✅ Cancellation/cleanup funcionando
+
+## 🚨 **CRÍTICO: IMPLEMENTAR EJECUCIONES VISUALES**
+
+**PROBLEMA ACTUAL**: Los traces de ejecución NO aparecen visualmente en los nodos como en Flowise
+**IMPACTO**: Los usuarios no ven feedback visual durante ejecución de workflows
+
+### ✅ **PROGRESO ACTUAL**:
+- [x] Sistema de states implementado (idle, running, success, error)
+- [x] Spinner amarillo durante ejecución en AgentNode
+- [x] onNodeUpdate callback conectado a updateNodeData
+- [x] Badge de feedback simplificado sin texto "visual_agent"
+
+### 🚨 **PENDIENTES CRÍTICOS**:
+- [ ] System prompt no funciona - revisar FlowiseSimpleExecutor línea 177
+- [ ] Verificar que updates llegan correctamente a los nodos
+- [ ] Test completo del flujo: Input → Agent → Output con traces visuales
+- [ ] Debugging de la cadena: FlowiseSimpleExecutor → ChatSidebar → updateNodeData → AgentNode
+
+**🚨 SIN ESTO COMPLETADO, NO CONTINUAR A SEMANA 1**
+
 ### **Semana 1 Success Metrics:**
-- [ ] 6 herramientas básicas funcionando
-- [ ] Agents pueden usar Calculator, Files, Web, DateTime
-- [ ] CustomFunction ejecuta JavaScript arbitrary
+- [ ] 6 herramientas básicas funcionando SOBRE motor robusto
+- [ ] Agents pueden usar Calculator, Files, Web, DateTime sin errores
+- [ ] CustomFunction ejecuta JavaScript arbitrary de forma confiable
 
 ### **Semana 2 Success Metrics:**
-- [ ] HumanInput workflow funcional
-- [ ] Conditional branching operativo
-- [ ] Sub-workflows con ExecuteFlow
-- [ ] ToolAgent especializados
+- [ ] HumanInput workflow funcional con pause/resume perfecto
+- [ ] Conditional branching operativo sin state corruption
+- [ ] Sub-workflows con ExecuteFlow sin memory leaks
+- [ ] ToolAgent especializados con validation completa
 
 ### **Semana 3 Success Metrics:**
-- [ ] GoogleSearch integrado
-- [ ] WebScraper extrayendo contenido
-- [ ] HTTP requests funcionales
-- [ ] Memory management avanzado
+- [ ] GoogleSearch integrado con retry logic
+- [ ] WebScraper extrayendo contenido con timeout handling
+- [ ] HTTP requests funcionales con proper error propagation
+- [ ] Memory management avanzado enterprise-ready
 
 ## 📈 **IMPACTO PROYECTADO**
 
@@ -392,7 +542,11 @@ const agentFlowNodes = {
 - **Único sistema** con HumanInput visual
 - **Primera librería** con multi-framework + Flowise patterns
 
-**💡 REGLA DE ORO: Seguir arquitecturas probadas de Flowise, no reinventar**
+**💡 REGLAS DE ORO:**
+1. **Seguir arquitecturas probadas de Flowise, no reinventar**
+2. **🚨 PASO 0 ES BLOCKER - No agregar features sin motor sólido**
+3. **Motor robusto primero, features después**
+4. **Cada executor debe pasar integration tests antes de production**
 
 ## 🎯 **OBJETIVO FINAL - FORMMY AGENTS PLATFORM**
 

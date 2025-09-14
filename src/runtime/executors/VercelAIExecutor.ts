@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { ComponentExecutor, type ExecutionContext as OldExecutionContext, type ExecutionResult as OldExecutionResult, type RuntimeType } from '../ExecutionEngine';
+import { ComponentExecutor, type ExecutionContext as OldExecutionContext, type ExecutionResult as OldExecutionResult, type RuntimeType } from '../ComponentExecutor';
 import { ExecutorFramework, type ToolDefinition, type ValidationResult, type ExecutionContext, type ExecutionResult, type StreamingEvent } from '../ExecutorFramework';
 
 export class VercelAIExecutor extends ExecutorFramework {
@@ -26,7 +26,7 @@ export class VercelAIExecutor extends ExecutorFramework {
         name: 'Agente IA',
         description: 'Procesamiento inteligente con IA',
         framework: 'vercel-ai',
-        category: 'AI Agents',
+        category: 'visual_agents',
         icon: '🤖',
         defaultConfig: {
           model: 'gpt-3.5-turbo',
@@ -171,8 +171,15 @@ export class VercelAIExecutor extends ExecutorFramework {
   }
 
   canExecute(context: ExecutionContext): boolean {
-    // Vercel AI executor now handles ALL components since it's the only executor
-    return true;
+    const nodeType = context.componentName.toLowerCase();
+    const framework = context.framework.toLowerCase();
+
+    // Handle agent nodes and vercel-ai specific components
+    return nodeType === 'agent' ||
+           framework === 'vercel-ai' ||
+           nodeType.includes('agent') ||
+           nodeType === 'openai' ||
+           nodeType === 'anthropic';
   }
 
   async execute(context: ExecutionContext): Promise<ExecutionResult> {

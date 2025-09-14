@@ -114,7 +114,7 @@ export const englishPlugin: LanguagePlugin = {
 
     // Sidebar
     sidebar: {
-      aiAgents: 'AI Agents',
+      aiAgents: 'visual_agents',
       frameworks: 'Frameworks',
       vercelAI: 'Vercel AI',
       llamaIndex: 'LlamaIndex',

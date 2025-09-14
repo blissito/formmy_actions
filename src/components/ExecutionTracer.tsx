@@ -210,33 +210,50 @@ export const ExecutionTracer: React.FC<ExecutionTracerProps> = ({
     }
 
     const nodes: any[] = [];
-    execution.results.forEach((result, nodeId) => {
-      // Mapear status de ExecutionEngine a formato Flowise
-      let status = 'PENDING';
-      switch (result.status) {
-        case 'success':
-          status = 'FINISHED';
-          break;
-        case 'error':
-          status = 'ERROR';
-          break;
-        case 'running':
-          status = 'RUNNING';
-          break;
+
+    // Handle both ExecutionEngine format and SimpleFlowiseExecutor format
+    const results = execution.results || execution.nodeResults;
+    if (!results) {
+      return nodes;
+    }
+
+    const resultsMap = results instanceof Map ? results : new Map(Object.entries(results));
+    resultsMap.forEach((result, nodeId) => {
+      // Handle both ExecutionEngine format and SimpleFlowiseExecutor format
+      let status = 'FINISHED'; // Default for SimpleFlowiseExecutor
+
+      if (result && result.status) {
+        // ExecutionEngine format
+        switch (result.status) {
+          case 'success':
+            status = 'FINISHED';
+            break;
+          case 'error':
+            status = 'ERROR';
+            break;
+          case 'running':
+            status = 'RUNNING';
+            break;
+          default:
+            status = 'PENDING';
+        }
       }
+
+      // Handle both result formats
+      const outputData = result?.outputs || result || {};
 
       nodes.push({
         id: nodeId,
-        label: result.outputs?.nodeLabel || `Node ${nodeId}`,
-        name: result.outputs?.nodeType || 'unknown',
+        label: outputData.nodeLabel || `Node ${nodeId}`,
+        name: outputData.nodeType || nodeId,
         status,
         data: {
-          ...result.outputs,
-          inputs: result.outputs?.inputs || {},
-          outputs: result.outputs || {},
-          logs: result.logs || [],
-          executionTime: result.executionTime,
-          error: result.error,
+          ...outputData,
+          inputs: outputData.inputs || {},
+          outputs: outputData,
+          logs: result?.logs || [],
+          executionTime: result?.executionTime,
+          error: result?.error,
         },
         children: [],
       });
@@ -247,12 +264,12 @@ export const ExecutionTracer: React.FC<ExecutionTracerProps> = ({
     // Expandir todos los nodos por defecto
     setExpandedNodes(nodes.map(node => node.id));
 
-    // Determinar status general
-    if (execution.status === 'error') {
+    // Determinar status general (handle both formats)
+    if (execution.status === 'error' || execution.success === false) {
       setExecutionStatus('ERROR');
     } else if (execution.status === 'running') {
       setExecutionStatus('RUNNING');
-    } else if (execution.status === 'completed') {
+    } else if (execution.status === 'completed' || execution.success === true) {
       setExecutionStatus('FINISHED');
     } else {
       setExecutionStatus('PENDING');

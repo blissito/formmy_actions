@@ -114,6 +114,7 @@ Please use this information when responding to user queries about their workflow
         content: msg.content
       }));
 
+
       // Call OpenAI
       const completion = await this.openai.chat.completions.create({
         model: this.config.model,

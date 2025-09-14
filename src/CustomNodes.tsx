@@ -15,9 +15,13 @@ import {
 } from "react-icons/fi";
 import { HiOutlineSparkles } from "react-icons/hi2";
 import { TbRobot } from "react-icons/tb";
+import { RiRobot2Fill } from "react-icons/ri";
 import { ModelService, type ModelInfo } from "./services/modelService";
 import { useWorkflowExecution } from "./runtime/WorkflowExecutionContext";
 import TextInputWithVariables from "./components/TextInputWithVariables";
+import { TypingBubble } from "./components/TypingBubble";
+import { WorkflowTreeView } from "./components/WorkflowTreeView";
+import { useChatHistory } from "./components/ChatHistory";
 import toast from "react-hot-toast";
 
 interface BaseCardProps {
@@ -180,8 +184,32 @@ export function AgentNode({ data, id }: NodeProps) {
   const [isLoadingModels, setIsLoadingModels] = React.useState(false);
   const { getNodes, setNodes, updateNodeData } = useReactFlow();
 
+  // Chat history for memory
+  const { getConversationContext } = useChatHistory();
+
   // Execution state
   const executionStatus = data?.executionStatus || "idle"; // idle, running, success, error
+
+  // Auto-clean execution status similar to Flowise
+  React.useEffect(() => {
+    let timeout: NodeJS.Timeout;
+
+    if (executionStatus === "success") {
+      // Clear success state after 3 seconds like Flowise
+      timeout = setTimeout(() => {
+        updateNodeData(id, { executionStatus: "idle" });
+      }, 3000);
+    } else if (executionStatus === "error") {
+      // Clear error state after 5 seconds to give user time to see the error
+      timeout = setTimeout(() => {
+        updateNodeData(id, { executionStatus: "idle" });
+      }, 5000);
+    }
+
+    return () => {
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [executionStatus, id, updateNodeData]);
 
   // Cargar configuración global desde localStorage
   const globalConfig = React.useMemo(() => {
@@ -198,19 +226,29 @@ export function AgentNode({ data, id }: NodeProps) {
     temperature: data?.temperature ?? globalConfig.defaultTemperature ?? 0.7,
     stream: data?.stream ?? globalConfig.defaultStream ?? true,
     agentType: String(data?.agentType || "openai"), // openai, anthropic, llamaindex
+    systemPrompt: String(data?.systemPrompt || ""), // ✅ FIX: Inicializar vacío para permitir personalización
+    memoryEnabled: data?.memoryEnabled ?? true, // Memory enabled by default like Flowise
+    memoryLength: data?.memoryLength ?? 10, // Number of previous messages to remember
   });
 
   // Helper function to update config and save to node data
   const updateConfig = React.useCallback(
     (newConfig: typeof config) => {
+
       setConfig(newConfig);
       // Guardar la configuración en los datos del nodo para que persista
-      updateNodeData(id, {
+      const nodeDataToSave = {
+        ...data, // CRÍTICO: Preservar datos existentes
         model: newConfig.model,
         temperature: newConfig.temperature,
         stream: newConfig.stream,
         agentType: newConfig.agentType,
-      });
+        systemPrompt: newConfig.systemPrompt,
+        memoryEnabled: newConfig.memoryEnabled,
+        memoryLength: newConfig.memoryLength,
+      };
+
+      updateNodeData(id, nodeDataToSave);
     },
     [id, updateNodeData]
   );
@@ -355,9 +393,9 @@ export function AgentNode({ data, id }: NodeProps) {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <div
-              className={`w-[30px] h-8 rounded-xl bg-gradient-to-br ${colors.iconBg} flex items-center justify-center text-white shadow-md relative`}
+              className={`w-[40px] h-10 rounded-xl bg-gradient-to-br ${colors.iconBg} flex items-center justify-center text-white shadow-md relative`}
             >
-              <TbRobot size={16} />
+              <RiRobot2Fill size={24} />
               {executionStatus === "running" && (
                 <div
                   className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full animate-pulse"
@@ -371,15 +409,37 @@ export function AgentNode({ data, id }: NodeProps) {
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></div>
               )}
             </div>
-            <div className={`${colors.textColor} font-bold text-sm`}>
-              Agente IA
-              {executionStatus === "running" && (
-                <span
-                  className="ml-1 text-amber-600 text-xs animate-pulse"
-                  style={{ animationDuration: "1.5s" }}
-                >
-                  (pensando...)
-                </span>
+            <div className="flex flex-col gap-1">
+              <div className={`${colors.textColor} font-bold text-sm`}>
+                Agente IA
+                {executionStatus === "running" && data?.isProcessing && (
+                  <div className="ml-2 scale-75 origin-left">
+                    <TypingBubble />
+                  </div>
+                )}
+                {executionStatus === "running" && data?.isStreaming && (
+                  <span
+                    className="ml-1 text-green-600 text-xs animate-pulse"
+                    style={{ animationDuration: "1s" }}
+                  >
+                    (streaming...)
+                  </span>
+                )}
+                {executionStatus === "running" && !data?.isProcessing && !data?.isStreaming && (
+                  <span
+                    className="ml-1 text-amber-600 text-xs animate-pulse"
+                    style={{ animationDuration: "1.5s" }}
+                  >
+                    (ejecutando...)
+                  </span>
+                )}
+              </div>
+              {!isConfigOpen && (
+                <div className="flex items-center gap-1">
+                  <span className="px-2 py-0.5 bg-white/80 text-gray-700 text-xs rounded-full font-medium border border-gray-200 shadow-sm">
+                    {config.model}
+                  </span>
+                </div>
               )}
             </div>
           </div>
@@ -487,14 +547,73 @@ export function AgentNode({ data, id }: NodeProps) {
                 <option value="llamaindex">LlamaIndex (ReActAgent)</option>
               </select>
             </div>
+
+            <div>
+              <label className="text-xs text-amber-700 font-medium">
+                System Prompt:
+              </label>
+              <TextInputWithVariables
+                value={config.systemPrompt}
+                onChange={(newPrompt) =>
+                  updateConfig({ ...config, systemPrompt: newPrompt })
+                }
+                className="w-full text-xs p-2 rounded bg-white border border-amber-200 resize-none"
+                rows={3}
+                placeholder="Enter system prompt for the agent..."
+              />
+            </div>
+
+            <div className="space-y-2 border-t pt-2">
+              <label className="text-xs text-amber-700 font-medium">
+                Memory Settings:
+              </label>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={config.memoryEnabled}
+                  onChange={(e) =>
+                    updateConfig({ ...config, memoryEnabled: e.target.checked })
+                  }
+                  className="rounded"
+                />
+                <label className="text-xs text-amber-700 font-medium">
+                  Enable Conversation Memory
+                </label>
+              </div>
+
+              {config.memoryEnabled && (
+                <div>
+                  <label className="text-xs text-amber-700 font-medium">
+                    Memory Length: {config.memoryLength} messages
+                  </label>
+                  <input
+                    type="range"
+                    min="5"
+                    max="50"
+                    step="5"
+                    value={config.memoryLength}
+                    onChange={(e) =>
+                      updateConfig({
+                        ...config,
+                        memoryLength: parseInt(e.target.value),
+                      })
+                    }
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
+                    className="w-full pointer-events-auto"
+                  />
+                  <div className="text-xs text-gray-500 mt-1">
+                    Agent will remember the last {config.memoryLength} messages
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
-        <div className="text-gray-600 text-xs text-center font-medium">
-          {String(config.agentType).toUpperCase()}: {config.model}
-        </div>
         <div className="text-gray-500 text-xs text-center">
-          T: {config.temperature} | Stream: {config.stream ? "ON" : "OFF"}
+          T: {config.temperature} | Stream: {config.stream ? "SÍ" : "NO"}
         </div>
         {hasToolsConnected && (
           <div className="text-gray-500 text-xs text-center flex items-center justify-center gap-1">
@@ -566,10 +685,50 @@ export function OutputNode({ data }: NodeProps) {
 
   // Update result when data changes
   React.useEffect(() => {
-    if (data?.result) {
+    if (data?.result !== undefined) {
       setResult(data.result);
     }
   }, [data?.result, data?.executionStatus]);
+
+  // Clear result when execution starts
+  React.useEffect(() => {
+    if (data?.executionStatus === "running") {
+      setResult(null);
+    }
+  }, [data?.executionStatus]);
+
+  // Auto-clean execution status like Flowise
+  React.useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    const status = data?.executionStatus;
+
+    if (status === "success") {
+      // Clear success state after 3 seconds like Flowise
+      timeout = setTimeout(() => {
+        if (data && typeof data === 'object') {
+          data.executionStatus = "idle";
+        }
+      }, 3000);
+    } else if (status === "error") {
+      // Clear error state after 5 seconds
+      timeout = setTimeout(() => {
+        if (data && typeof data === 'object') {
+          data.executionStatus = "idle";
+        }
+      }, 5000);
+    } else if (status === "running" && result) {
+      // If we have a result but status is still running, mark as success after 1 second
+      timeout = setTimeout(() => {
+        if (data && typeof data === 'object') {
+          data.executionStatus = "success";
+        }
+      }, 1000);
+    }
+
+    return () => {
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [data?.executionStatus, result, data]);
 
   // Check if result contains a video file path or URL
   const isVideoResult = () => {
@@ -607,7 +766,7 @@ export function OutputNode({ data }: NodeProps) {
 
   // Get the result text to show in the main textarea
   const getResultText = () => {
-    // If we have a result, show it
+    // If we have a result, show it (even if execution is still running)
     if (result) {
       // If result is a string, return it directly
       if (typeof result === "string") {
@@ -627,7 +786,7 @@ export function OutputNode({ data }: NodeProps) {
       }
     }
 
-    // Show status-based message when no result
+    // Show status-based message ONLY when no result
     if (executionStatus === "running") {
       return "Generando respuesta...";
     } else if (executionStatus === "error") {
@@ -830,17 +989,33 @@ export function OutputNode({ data }: NodeProps) {
               ) : (
                 <div className="flex items-center justify-center py-8 text-gray-400">
                   {executionStatus === "running" ? (
-                    <div className="flex items-center gap-2">
-                      <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-                      <span>Generando respuesta...</span>
-                    </div>
+                    data?.isProcessing ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <TypingBubble />
+                        <small className="text-xs text-gray-500">procesando...</small>
+                      </div>
+                    ) : data?.isStreaming ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="flex items-center gap-1">
+                          <div className="w-1 h-1 bg-green-500 rounded-full animate-pulse"></div>
+                          <div className="w-1 h-1 bg-green-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                          <div className="w-1 h-1 bg-green-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                        </div>
+                        <small className="text-xs text-green-500">streaming...</small>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <div className="animate-spin w-3 h-3 border border-blue-500 border-t-transparent rounded-full"></div>
+                        <small className="text-xs text-gray-500">ejecutando...</small>
+                      </div>
+                    )
                   ) : executionStatus === "error" ? (
-                    <div className="flex items-center gap-2 text-red-500">
-                      <span>❌</span>
-                      <span>Error en la ejecución</span>
+                    <div className="flex items-center gap-1 text-red-500">
+                      <span className="text-sm">❌</span>
+                      <small className="text-xs">error</small>
                     </div>
                   ) : (
-                    <span>Ejecuta el flujo para ver la respuesta</span>
+                    <small className="text-xs text-gray-400">ejecuta el flujo...</small>
                   )}
                 </div>
               )}
@@ -850,6 +1025,19 @@ export function OutputNode({ data }: NodeProps) {
           {/* Expandable Details */}
           {isExpanded && hasResult && (
             <div className="space-y-3">
+              {/* Workflow Trace - Flowise Style */}
+              {data?.workflowData && Array.isArray(data.workflowData) && data.workflowData.length > 0 && (
+                <div className="bg-white rounded-lg border border-gray-200">
+                  <WorkflowTreeView
+                    workflowData={data.workflowData}
+                    title="Execution Trace"
+                    initiallyExpanded={true}
+                    indentationLevel={16}
+                    fontSize={12}
+                  />
+                </div>
+              )}
+
               {/* Metadata */}
               <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
                 <div className="text-xs font-medium text-gray-600 mb-2">
@@ -871,6 +1059,14 @@ export function OutputNode({ data }: NodeProps) {
                       Tokens:{" "}
                       <span className="font-mono">
                         {result.tokens.total || 0}
+                      </span>
+                    </div>
+                  )}
+                  {data?.workflowData && (
+                    <div>
+                      Workflow Steps:{" "}
+                      <span className="font-mono">
+                        {data.workflowData.length}
                       </span>
                     </div>
                   )}

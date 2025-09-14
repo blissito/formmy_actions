@@ -124,7 +124,7 @@ export const FFmpegNode: React.FC<NodeProps> = ({ data, selected }) => {
   );
 };
 
-import { ComponentExecutor, type ExecutionContext, type ExecutionResult } from '../runtime/ExecutionEngine';
+import { ComponentExecutor, type ExecutionContext, type ExecutionResult } from '../runtime/ComponentExecutor';
 
 // Executor for FFmpeg Tool
 export class FFmpegExecutor extends ComponentExecutor {

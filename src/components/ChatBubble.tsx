@@ -86,11 +86,17 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
     setIsLoading(true);
 
     try {
+      console.log('🟡 CHATBUBBLE handleSendMessage called');
+      console.log('🟡 onSendMessage exists:', !!onSendMessage);
+      console.log('🟡 inputText:', inputText);
+
       let botResponse = "Thanks for your message! This is a demo response.";
       let execution: FlowExecution | undefined;
 
       if (onSendMessage) {
+        console.log('🟢 CALLING onSendMessage...');
         const result = await onSendMessage(inputText);
+        console.log('🟢 onSendMessage result:', result);
         if (typeof result === 'string') {
           botResponse = result;
         } else {
@@ -98,6 +104,8 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
           execution = result.execution;
           setLastExecution(execution);
         }
+      } else {
+        console.log('🔴 NO onSendMessage provided - using demo response');
       }
 
       const botMessage: Message = {

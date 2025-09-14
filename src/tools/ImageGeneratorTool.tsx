@@ -151,7 +151,7 @@ export const ImageGeneratorNode: React.FC<NodeProps> = ({ data, selected }) => {
   );
 };
 
-import { ComponentExecutor, type ExecutionContext, type ExecutionResult } from '../runtime/ExecutionEngine';
+import { ComponentExecutor, type ExecutionContext, type ExecutionResult } from '../runtime/ComponentExecutor';
 
 // Executor for Image Generator
 export class ImageGeneratorExecutor extends ComponentExecutor {

@@ -17,7 +17,6 @@ export class SimpleAgentExecutor implements ExecutorFramework {
   readonly displayName = 'AI Agents';
 
   async initialize(): Promise<void> {
-    console.log('✅ SimpleAgentExecutor initialized (UI-only mode)');
   }
 
   async getAvailableTools(): Promise<ToolDefinition[]> {

@@ -19,8 +19,16 @@ import {
 } from 'react-icons/fi';
 import { RiRobot2Line } from 'react-icons/ri';
 import { useWorkflowExecution } from '../runtime/WorkflowExecutionContext';
-import { SimpleChatAgent } from '../runtime/agents/SimpleChatAgent';
 import { useGlobalConfig } from './GlobalSettings';
+import { FlowiseSimpleExecutor } from '../runtime/FlowiseSimpleExecutor';
+import { useReactFlow } from '@xyflow/react';
+
+interface AgentReasoning {
+  agentName?: string;
+  messages?: string[];
+  usedTools?: any[];
+  sourceDocuments?: any[];
+}
 
 interface Message {
   id: string;
@@ -28,6 +36,9 @@ interface Message {
   content: string;
   timestamp: Date;
   loading?: boolean;
+  agentReasoning?: AgentReasoning[];
+  usedTools?: any[];
+  sourceDocuments?: any[];
 }
 
 interface ChatSidebarProps {
@@ -36,15 +47,18 @@ interface ChatSidebarProps {
 }
 
 export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
+  // Debug: Verificar props
+
   const { config: globalConfig } = useGlobalConfig();
+  const { getNodes, getEdges, updateNodeData } = useReactFlow();
   const {
     workflowState,
     getFlowState,
     getGlobalData
   } = useWorkflowExecution();
 
-  // Chat state
-  const [chatAgent, setChatAgent] = useState<SimpleChatAgent | null>(null);
+  // Chat state - Solo FlowiseSimpleExecutor
+  const [flowiseExecutor] = useState(new FlowiseSimpleExecutor());
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -59,29 +73,7 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Initialize chat agent when OpenAI API key is available
-  useEffect(() => {
-    if (globalConfig.openaiApiKey && !chatAgent) {
-      const agent = new SimpleChatAgent({
-        apiKey: globalConfig.openaiApiKey,
-        model: 'gpt-3.5-turbo',
-        maxTokens: globalConfig.defaultMaxTokens === 'unlimited' ? 1500 : globalConfig.defaultMaxTokens,
-        temperature: globalConfig.defaultTemperature,
-        systemMessage: `You are an AI assistant integrated with formmy-actions workflow builder. Help users test and interact with their workflows.`
-      });
-
-      setChatAgent(agent);
-
-      setMessages([
-        {
-          id: '1',
-          type: 'system',
-          content: '✅ Agente IA conectado. Puedo ayudarte a probar tu workflow.',
-          timestamp: new Date()
-        }
-      ]);
-    }
-  }, [globalConfig.openaiApiKey, chatAgent]);
+  // Chat inicializado - solo usa FlowiseSimpleExecutor con nodos del workflow
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -111,7 +103,7 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
   };
 
   const sendMessage = async () => {
-    if (!inputValue.trim() || isLoading || !chatAgent) return;
+    if (!inputValue.trim() || isLoading) return;
 
     if (!globalConfig.openaiApiKey) {
       const errorMessage: Message = {
@@ -138,7 +130,7 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
     const loadingMessage: Message = {
       id: `loading_${Date.now()}`,
       type: 'bot',
-      content: 'Pensando...',
+      content: 'Generando...',
       timestamp: new Date(),
       loading: true
     };
@@ -146,24 +138,72 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
     setMessages(prev => [...prev, loadingMessage]);
 
     try {
-      // Update agent with current workflow context
-      const flowState = getFlowState();
-      const globalData = getGlobalData('startConfig');
-      chatAgent.setWorkflowContext(flowState, globalData);
+      // Get current workflow nodes and edges
+      const nodes = getNodes();
+      const edges = getEdges();
 
-      // Get response from AI agent
-      const response = await chatAgent.chat(userMessage.content);
+      // Track reasoning updates
+      let currentMessage = loadingMessage;
+
+
+      // Execute workflow with trace callbacks (Flowise pattern)
+      const result = await flowiseExecutor.executeChat(
+        nodes,
+        edges,
+        userMessage.content,
+        (nodeId: string, status: string, result?: any) => {
+
+          // CRÍTICO: Actualizar estado visual del nodo en React Flow
+          updateNodeData(nodeId, {
+            executionStatus: status,
+            isProcessing: result?.isThinking,
+            isStreaming: result?.isStreaming,
+            response: result?.response
+          });
+
+          // Update message with trace info in real-time SOLO si hay reasoning
+          if (result?.agentReasoning && result.agentReasoning.length > 0) {
+            currentMessage = {
+              ...currentMessage,
+              agentReasoning: result.agentReasoning,
+              loading: true
+            };
+
+            setMessages(prev => prev.map(m =>
+              m.id === loadingMessage.id ? currentMessage : m
+            ));
+          } else if (result && result.agentReasoning === undefined) {
+            // CRÍTICO: Limpiar reasoning cuando se completa la ejecución
+            currentMessage = {
+              ...currentMessage,
+              agentReasoning: undefined,
+              loading: false
+            };
+            setMessages(prev => prev.map(m =>
+              m.id === loadingMessage.id ? currentMessage : m
+            ));
+          }
+        }
+      );
+
+
+      // CRÍTICO: Asegurar que se quite el loading message con reasoning
+      setMessages(prev => prev.filter(m => m.id !== loadingMessage.id));
 
       const botResponse: Message = {
         id: Date.now().toString(),
         type: 'bot',
-        content: response.message,
-        timestamp: response.timestamp
+        content: result.success ? result.message : `❌ ${result.message}`,
+        timestamp: new Date()
+        // No agentReasoning - limpio al terminar
       };
 
-      setMessages(prev => prev.filter(m => m.id !== loadingMessage.id).concat(botResponse));
+      setMessages(prev => [...prev, botResponse]);
 
     } catch (error: any) {
+      // CRÍTICO: Limpiar loading message en error también
+      setMessages(prev => prev.filter(m => m.id !== loadingMessage.id));
+
       const errorMessage: Message = {
         id: Date.now().toString(),
         type: 'system',
@@ -171,7 +211,7 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
         timestamp: new Date()
       };
 
-      setMessages(prev => prev.filter(m => m.id !== loadingMessage.id).concat(errorMessage));
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -191,6 +231,17 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
     });
   };
 
+  // Component for Agent Reasoning Trace - minimal badge
+  const AgentReasoningBubble = ({ reasoning }: { reasoning: AgentReasoning }) => (
+    <div className="mt-1">
+      {reasoning.messages?.map((message, idx) => (
+        <span key={idx} className="inline-block px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs mr-1 mb-1">
+          {message}
+        </span>
+      ))}
+    </div>
+  );
+
   const getMessageIcon = (type: string) => {
     switch (type) {
       case 'user': return <FiUser size={14} className="text-blue-600" />;
@@ -205,9 +256,12 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
       {/* Chat Toggle Button - Always visible in bottom right */}
       <button
         onClick={onToggle}
-        className={`fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg transition-all z-[9999] ${
-          isOpen ? 'translate-x-[-416px]' : 'translate-x-0'
-        }`}
+        className="fixed bottom-6 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg transition-all duration-100 z-[9999]"
+        style={{
+          right: isOpen ? '400px' : '24px', // 400px = 384px chat width + 16px spacing
+          bottom: '24px',
+          zIndex: 9999
+        }}
         title={isOpen ? "Cerrar chat" : "Abrir chat"}
       >
         {isOpen ? <FiX size={20} /> : <FiMessageCircle size={20} />}
@@ -215,9 +269,19 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
 
       {/* Chat Sidebar Panel - Slides from right */}
       <div
-        className={`fixed top-0 right-0 h-screen w-96 bg-white border-l border-gray-300 shadow-xl z-[9998] flex flex-col transition-transform duration-300 ${
-          isOpen ? 'translate-x-0' : 'translate-x-full'
+        className={`fixed right-0 w-96 bg-white border-l border-gray-300 shadow-xl z-[9998] flex flex-col ${
+          isOpen ? 'block' : 'hidden'
         }`}
+        style={{
+          backgroundColor: 'white',
+          position: 'fixed',
+          top: '80px',
+          right: '0px',
+          width: '384px', // w-96
+          height: 'calc(100vh - 80px)',
+          zIndex: 9998,
+          display: isOpen ? 'flex' : 'none'
+        }}
       >
         {/* Header */}
         <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-green-50">
@@ -241,6 +305,13 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
               >
                 <FiTrash2 size={16} />
               </button>
+              <button
+                onClick={onToggle}
+                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                title="Cerrar chat"
+              >
+                <FiX size={16} />
+              </button>
             </div>
           </div>
         </div>
@@ -261,22 +332,35 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
                       : 'bg-yellow-50 text-yellow-800 border border-yellow-200'
                   }`}
                 >
-                  <div className="text-sm whitespace-pre-wrap">
+                  {/* Agent Reasoning Trace - Show BEFORE content */}
+                  {message.agentReasoning?.map((reasoning, idx) => (
+                    <AgentReasoningBubble key={idx} reasoning={reasoning} />
+                  ))}
+
+                  <div className="text-xs whitespace-pre-wrap">
                     {message.loading ? (
                       <div className="flex items-center gap-2">
-                        <FiLoader className="animate-spin" size={14} />
-                        {message.content}
+                        <FiLoader className="animate-spin" size={12} />
+                        <span className="text-xs">{message.content}</span>
                       </div>
                     ) : (
                       message.content
                     )}
                   </div>
-                  <div
-                    className={`text-xs mt-1 ${
-                      message.type === 'user' ? 'text-blue-100' : 'text-gray-500'
-                    }`}
-                  >
-                    {formatTimestamp(message.timestamp)}
+
+                  {/* Badge con hora del mensaje */}
+                  <div className="flex justify-end mt-2">
+                    <span
+                      className={`inline-block px-2 py-0.5 rounded-full text-xs ${
+                        message.type === 'user'
+                          ? 'bg-blue-400/30 text-blue-100'
+                          : message.type === 'bot'
+                          ? 'bg-gray-200 text-gray-600'
+                          : 'bg-yellow-200 text-yellow-700'
+                      }`}
+                    >
+                      {formatTimestamp(message.timestamp)}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -294,13 +378,13 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder={chatAgent ? "Escribe aquí..." : "Configura API Key"}
+              placeholder={globalConfig.openaiApiKey ? "Prueba tu workflow..." : "Configura API Key"}
               className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              disabled={isLoading || !chatAgent}
+              disabled={isLoading || !globalConfig.openaiApiKey}
             />
             <button
               onClick={sendMessage}
-              disabled={!inputValue.trim() || isLoading || !chatAgent}
+              disabled={!inputValue.trim() || isLoading || !globalConfig.openaiApiKey}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <FiSend size={16} />

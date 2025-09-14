@@ -22,7 +22,6 @@ export const initializeExecutors = () => {
   // Future executors will be registered here:
   // executorRegistry.register(new LangChainExecutor());
 
-  console.log('✅ Executors initialized:', executorRegistry.getAvailableFrameworks().map(f => f.displayName));
 };
 
 // Auto-initialize when this module is imported

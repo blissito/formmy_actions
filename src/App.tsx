@@ -43,6 +43,9 @@ import { ChatNode } from "./ChatNode";
 import { StartNode } from "./StartNode";
 import { GlobalSettings, useGlobalConfig } from "./components/GlobalSettings";
 import { ExecutionEngine } from "./runtime/ExecutionEngine";
+import { SimpleFlowiseExecutor } from "./runtime/SimpleFlowiseExecutor";
+import { FlowiseSimpleExecutor } from "./runtime/FlowiseSimpleExecutor";
+import { FlowisePatternExecutor } from "./runtime/FlowisePatternExecutor";
 import { FlowExporter } from "./tools/FlowExporter";
 import {
   FiEdit,
@@ -58,7 +61,6 @@ import InlineBetaBadge from "./InlineBetaBadge";
 import FrameworkSidebar from "./components/FrameworkSidebar";
 import BarraDeHerramientas from "./components/BarraDeHerramientas";
 import { ChatSidebar } from "./components/ChatSidebar";
-import { ChatBubble } from "./components/ChatBubble";
 
 import { cn } from './utils/cn';
 import { WorkflowExecutionProvider } from './runtime/WorkflowExecutionContext';
@@ -252,6 +254,8 @@ function FlowCanvas({
 
   // Instancia del ExecutionEngine
   const executionEngine = useRef(new ExecutionEngine()).current;
+  const flowiseExecutor = useRef(new SimpleFlowiseExecutor()).current;
+  const flowiseChatExecutor = useRef(new FlowisePatternExecutor()).current;
 
   // Función para duplicar nodo
   const duplicateNode = useCallback(
@@ -438,53 +442,73 @@ function FlowCanvas({
       // Mostrar que estamos iniciando
       toast.loading("Ejecutando flujo...", { id: "flow-execution" });
 
-      const execution = await executionEngine.executeFlow(
-        flowId,
+      // Usar FlowiseSimpleExecutor directamente
+      const flowiseExecutor = new FlowiseSimpleExecutor();
+
+      // Obtener el mensaje del input node
+      const messageInputNode = nodes.find(n => n.type === 'input');
+      const userMessage = messageInputNode?.data?.message || messageInputNode?.data?.text || initialInputs.prompt || "Hello";
+
+      const execution = await flowiseExecutor.executeChat(
         nodes,
         edges,
-        initialInputs,
+        userMessage,
         updateNodeStatus
       );
 
       console.log("✅ Ejecución completada:", execution);
 
-      // Actualizar Output nodes con resultados
+      // Actualizar Output nodes con resultados (FlowiseSimpleExecutor format)
       const outputNodes = nodes.filter((n) => n.type === "output");
-      if (outputNodes.length > 0 && execution.results.size > 0) {
-        const lastResult = Array.from(execution.results.values()).pop();
-        if (lastResult && lastResult.outputs.response) {
-          setNodes((prevNodes) =>
-            prevNodes.map((node) =>
-              node.type === "output"
-                ? {
-                    ...node,
-                    data: {
-                      ...node.data,
-                      result: lastResult.outputs.response,
-                      executionStatus: "success",
-                    },
-                  }
-                : node
-            )
+      if (outputNodes.length > 0 && execution.success) {
+        setNodes((prevNodes) => {
+          const updatedNodes = prevNodes.map((node) =>
+            node.type === "output"
+              ? {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    result: execution.message,
+                    executionStatus: "success",
+                    lastUpdated: new Date().toISOString(),
+                    // Add workflow data for trace if available
+                    workflowData: execution.workflowData || [],
+                  },
+                }
+              : node
           );
-        }
+
+          // Auto-save after execution like Flowise
+          setTimeout(() => {
+            const flow = { nodes: updatedNodes, edges, viewport: { x: 0, y: 0, zoom: 1 } };
+            localStorage.setItem("ai-flow-canvas-state", JSON.stringify(flow));
+          }, 500);
+
+          return updatedNodes;
+        });
       }
 
-      // Recopilar logs de todos los nodos
-      const allLogs: string[] = [];
-      execution.results.forEach((result, nodeId) => {
-        allLogs.push(`=== Nodo ${nodeId} ===`);
-        allLogs.push(...result.logs);
-        if (result.error) {
-          allLogs.push(`❌ Error: ${result.error}`);
-        }
+      // Create mock execution result for compatibility
+      setExecutionResult({
+        flowId: flowId,
+        status: execution.success ? 'completed' : 'error',
+        results: new Map(),
+        startTime: new Date(),
+        endTime: new Date()
       });
 
-      setExecutionResult(execution);
-      setExecutionLogs(allLogs);
+      setExecutionLogs([
+        `🚀 FlowiseSimple execution completed`,
+        `💬 User Message: ${userMessage}`,
+        `${execution.success ? '✅' : '❌'} Result: ${execution.message}`
+      ]);
 
-      // Success toast
-      toast.success("¡Flujo ejecutado exitosamente!", { id: "flow-execution" });
+      // Toast based on execution result
+      if (execution.success) {
+        toast.success("¡Flujo ejecutado exitosamente!", { id: "flow-execution" });
+      } else {
+        toast.error(`❌ Error: ${execution.message}`, { id: "flow-execution" });
+      }
 
       // Call external callback if provided
       if (onExecuteCallback) {
@@ -596,6 +620,23 @@ function FlowCanvas({
     };
   }, [hasUnsavedChanges]);
 
+  // Función para resetear el workflow
+  const resetWorkflow = useCallback(() => {
+    localStorage.removeItem("ai-flow-canvas-state");
+    setNodes(initialNodes);
+    setEdges(initialEdges);
+    const initialState = JSON.stringify({
+      nodes: initialNodes,
+      edges: initialEdges,
+    });
+    setLastSavedState(initialState);
+    console.log("🔄 Workflow reset to default:", {
+      nodes: initialNodes.length,
+      edges: initialEdges.length,
+      nodeTypes: initialNodes.map(n => `${n.id}(${n.type})`)
+    });
+  }, [setNodes, setEdges]);
+
   // Cargar estado guardado al inicio usando React Flow format
   useEffect(() => {
     const savedFlow = localStorage.getItem("ai-flow-canvas-state");
@@ -609,6 +650,8 @@ function FlowCanvas({
         }
       } catch (error) {
         console.warn("Error cargando flujo guardado:", error);
+        // Si hay error, usar workflow por defecto
+        resetWorkflow();
       }
     } else {
       // Si no hay estado guardado, usar inicial y marcarlo como guardado
@@ -619,7 +662,7 @@ function FlowCanvas({
       setLastSavedState(initialState);
     }
     setIsLoaded(true);
-  }, [setNodes, setEdges]);
+  }, [setNodes, setEdges, resetWorkflow]);
 
   // Atajo de teclado Cmd+S / Ctrl+S para guardar
   useEffect(() => {
@@ -697,82 +740,6 @@ function FlowCanvas({
             showFitView={true}
             showInteractive={true}
           />
-          {/* Chat Bubble - Positioned in bottom right */}
-          <ChatBubble
-            title="Test Workflow"
-            welcomeMessage="Hi! I can help you test your workflow. Send me a message to execute the current flow."
-            placeholder="Type a message to test the workflow..."
-            onSendMessage={async (message) => {
-              // Execute the workflow when user sends a message
-              try {
-                // Set the user message as a workflow variable for nodes to access
-                setWorkflowVariable('user_message', message);
-                setWorkflowVariable('topic', message); // Set topic variable
-                setVariable('topic', message, 'runtime', 'Current topic from chat');
-
-                // Execute the flow
-                const execution = await executionEngine.executeFlow(
-                  `chat_flow_${Date.now()}`,
-                  nodes,
-                  edges,
-                  {
-                    prompt: message,
-                    input: message,
-                    topic: message,
-                    user_message: message,
-                  },
-                  (nodeId, status, result) => {
-                    setNodes((prevNodes) =>
-                      prevNodes.map((node) =>
-                        node.id === nodeId
-                          ? {
-                              ...node,
-                              data: {
-                                ...node.data,
-                                executionStatus: status,
-                                result: result,
-                              },
-                            }
-                          : node
-                      )
-                    );
-                  }
-                );
-
-                // Update global variables with execution results
-                execution.results.forEach((result, nodeId) => {
-                  if (result.outputs) {
-                    Object.entries(result.outputs).forEach(([key, value]) => {
-                      if (key === 'topic' || key === 'response' || key === 'result') {
-                        setWorkflowVariable(key, value);
-                        setVariable(key, String(value), 'runtime', `Result from node ${nodeId}`);
-                      }
-                    });
-                  }
-                });
-
-                // Get the last output from the output nodes
-                let responseMessage = "Workflow executed successfully!";
-                const outputNodes = nodes.filter(n => n.type === "output");
-                if (outputNodes.length > 0 && execution.results.size > 0) {
-                  const lastResult = Array.from(execution.results.values()).pop();
-                  if (lastResult && lastResult.outputs.response) {
-                    responseMessage = `Workflow executed! Result: ${lastResult.outputs.response}`;
-                  }
-                }
-
-                return {
-                  message: responseMessage,
-                  execution
-                };
-              } catch (error) {
-                console.error('Workflow execution error:', error);
-                return {
-                  message: `Sorry, there was an error executing the workflow: ${error instanceof Error ? error.message : String(error)}`,
-                };
-              }
-            }}
-          />
           <Background
             variant={BackgroundVariant.Dots}
             gap={16}
@@ -849,6 +816,15 @@ function FlowCanvas({
                 <FiPlay size={16} />
                 {isExecuting ? "Ejecutando..." : "Ejecutar"}
               </button>
+
+              {/* Botón para resetear workflow */}
+              <button
+                onClick={resetWorkflow}
+                className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 font-medium transition-all shadow-lg hover:shadow-xl"
+                title="Reset workflow to default (Input → Agent → Output)"
+              >
+                🔄 Reset to Default
+              </button>
             </div>
           </Panel>
         </ReactFlow>
@@ -898,7 +874,15 @@ interface AppProps {
 }
 
 function App({ onSave, onExecute, readonly }: AppProps) {
-  const [isChatOpen, setIsChatOpen] = useState(false);
+  // FORZAR: Chat siempre abierto al iniciar
+  const [isChatOpen, setIsChatOpen] = useState(true);
+
+  // Forzar chat abierto después del primer render
+  useEffect(() => {
+    setIsChatOpen(true);
+  }, []);
+
+  // Debug: Verificar estado inicial
 
   return (
     <VariablesProvider>

@@ -7,6 +7,7 @@ export * from './CustomNodes';
 
 // Runtime exports
 export * from './runtime/ExecutionEngine';
+export * from './runtime/ComponentExecutor';
 export * from './runtime/executors/VercelAIExecutor';
 export * from './runtime/executors/TypeScriptExecutor';
 
